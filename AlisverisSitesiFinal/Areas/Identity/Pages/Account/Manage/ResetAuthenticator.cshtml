@@ -1,0 +1,122 @@
+﻿@page
+@model ResetAuthenticatorModel
+@{
+    ViewData["Title"] = "Doğrulayıcı Anahtarını Sıfırla";
+    ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
+}
+
+<partial name="_StatusMessage" for="StatusMessage" />
+
+<div class="container py-3 py-md-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+
+            <div class="card border-0 shadow-sm" style="border-radius:1rem;">
+                <div class="card-body p-4 p-md-5">
+
+                    <!-- Başlık -->
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width:52px;height:52px;background:#fff3cd;">
+                            <!-- Uyarı/kalkan simgesi -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="#b68900" viewBox="0 0 16 16" aria-hidden="true">
+                                <path d="M8 0a8 8 0 1 0 8 8A8.009 8.009 0 0 0 8 0Zm0 3a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0V4a1 1 0 0 1 1-1Zm0 9.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="h4 mb-0">@ViewData["Title"]</h1>
+                            <div class="text-muted small">İki Aşamalı Doğrulama • Authenticator anahtarı yenileme</div>
+                        </div>
+                    </div>
+
+                    <!-- Uyarılar -->
+                    <div class="alert alert-warning d-flex align-items-start gap-2" role="alert">
+                        <span class="mt-1" aria-hidden="true">⚠️</span>
+                        <div>
+                            <p class="mb-2">
+                                <strong>Anahtarı sıfırlarsanız, doğrulayıcı uygulamanız yeniden yapılandırılana kadar çalışmaz.</strong>
+                            </p>
+                            <ul class="mb-0 ps-3">
+                                <li>Bu işlem geçici olarak 2FA’yı devre dışı bırakır.</li>
+                                <li>Yapılandırmayı tamamlamazsanız <strong>hesabınıza erişimi kaybedebilirsiniz</strong>.</li>
+                                <li>Sıfırlama sonrası <em>Enable Authenticator</em> adımlarını izleyerek yeni anahtarı kurmanız gerekir.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- İşlem formu -->
+                    <form id="reset-authenticator-form" method="post" class="mt-3">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirmCheck" />
+                            <label class="form-check-label" for="confirmCheck">
+                                Riskleri anladım; doğrulayıcı anahtarımı sıfırlamak istiyorum.
+                            </label>
+                        </div>
+
+                        <div class="d-flex flex-column flex-md-row gap-2">
+                            <!-- Modal'ı açan buton -->
+                            <button id="openConfirmModal"
+                                    type="button"
+                                    class="btn btn-danger btn-lg px-4"
+                                    disabled
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#confirmModal">
+                                Anahtarı Sıfırla
+                            </button>
+
+                            <a asp-page="./TwoFactorAuthentication" class="btn btn-outline-secondary btn-lg px-4">
+                                2FA Ayarlarına Dön
+                            </a>
+                        </div>
+
+                        <!-- Onay Modalı -->
+                        <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content" style="border-radius:.8rem;">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="confirmModalLabel">İşlemi Onaylayın</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        Doğrulayıcı anahtarınızı sıfırlamak istediğinizden emin misiniz?
+                                        Bu işlem sonrasında uygulamayı <strong>yeniden kurmanız</strong> gerekir ve
+                                        tamamlayana kadar 2FA devre dışı kalır.
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                                        <!-- Gerçek POST submit -->
+                                        <button id="reset-authenticator-button" class="btn btn-danger" type="submit">
+                                            Evet, sıfırla
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="text-muted small mt-3">
+                        İpucu: Sıfırlamadan sonra <em>Doğrulayıcı Uygulamasını Yapılandır</em> sayfasına giderek QR kodunu tarayın ve 6 haneli kodla doğrulayın.
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const confirmCheck = document.getElementById('confirmCheck');
+            const openBtn = document.getElementById('openConfirmModal');
+
+            function toggleButton() {
+                openBtn.disabled = !confirmCheck.checked;
+            }
+            confirmCheck.addEventListener('change', toggleButton);
+            toggleButton();
+        })();
+    </script>
+}

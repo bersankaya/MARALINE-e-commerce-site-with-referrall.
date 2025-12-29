@@ -1,0 +1,150 @@
+﻿@model List<AlisverisSitesiFinal.Models.ViewModels.SellerPayoutOzetVM>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Satıcı Ödeme Özeti";
+    var tr = new CultureInfo("tr-TR");
+
+    int toplamSatici = ViewBag.ToplamSatici ?? Model.Count;
+    int toplamKalem = ViewBag.ToplamKalem ?? Model.Sum(x => x.KalemSayisi);
+    decimal toplamBrut = ViewBag.ToplamBrut ?? Model.Sum(x => x.BrutToplam);
+    decimal toplamNet = ViewBag.ToplamNet ?? Model.Sum(x => x.NetToplam);
+}
+
+<div class="container my-3">
+    <h2 class="mb-3">Satıcı Ödeme Özeti</h2>
+
+    <!-- Dashboard -->
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body">
+                    <div class="small text-muted">Satıcı</div><div class="h5 fw-bold">@toplamSatici</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body">
+                    <div class="small text-muted">Kalem</div><div class="h5 fw-bold">@toplamKalem</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body">
+                    <div class="small text-muted">Brüt</div><div class="h5 fw-bold">@toplamBrut.ToString("C", tr)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body">
+                    <div class="small text-muted">Net (Ödenecek)</div><div class="h5 fw-bold text-success">@toplamNet.ToString("C", tr)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Satıcı</th>
+                            <th>IBAN</th>
+                            <th class="text-center">Kalem</th>
+                            <th class="text-end">Brüt</th>
+                            <th class="text-end">Net</th>
+                            <th class="text-end">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@s.SaticiAdSoyad</td>
+                                <td>
+                                    @if (string.IsNullOrWhiteSpace(s.IBAN))
+                                    {
+                                        <span class="badge bg-warning text-dark">IBAN Yok</span>
+                                    }
+                                    else
+                                    {
+                                        @s.IBAN
+                                    }
+                                </td>
+                                <td class="text-center">@s.KalemSayisi</td>
+                                <td class="text-end">@s.BrutToplam.ToString("C", tr)</td>
+                                <td class="text-end fw-semibold">@s.NetToplam.ToString("C", tr)</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#odemeModal"
+                                            data-sid="@s.SaticiId" data-ad="@s.SaticiAdSoyad" data-net="@s.NetToplam.ToString("C", tr)">
+                                        Ödemeyi Tamamla
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                        @if (!Model.Any())
+                        {
+                            <tr><td colspan="6" class="text-center text-muted py-4">Bekleyen ödeme yok.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="odemeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title">Ödemeyi Tamamla</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <form asp-action="OdemeYap" asp-controller="AdminSaticiOdeme" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" name="saticiId" id="modalSaticiId" />
+                    <div class="mb-2">
+                        <div class="small text-muted">Satıcı</div>
+                        <div class="fw-semibold" id="modalSaticiAd"></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="small text-muted">Ödenecek Net</div>
+                        <div class="fw-semibold" id="modalNet"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama (opsiyonel)</label>
+                        <input type="text" name="aciklama" class="form-control" placeholder="Örn. Haftalık ödeme" />
+                    </div>
+                    <div class="alert alert-info small mb-0">
+                        Bu işlem, satıcının bekleyen tüm kalemlerini tek paket halinde "Ödendi" kaydeder.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="submit" class="btn btn-primary">Onayla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const modal = document.getElementById('odemeModal');
+        modal?.addEventListener('show.bs.modal', function (event) {
+            const btn = event.relatedTarget;
+            const sid = btn.getAttribute('data-sid');
+            const ad  = btn.getAttribute('data-ad');
+            const net = btn.getAttribute('data-net');
+            document.getElementById('modalSaticiId').value = sid;
+            document.getElementById('modalSaticiAd').innerText = ad;
+            document.getElementById('modalNet').innerText = net;
+        });
+    </script>
+}

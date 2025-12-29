@@ -1,0 +1,127 @@
+﻿@page
+@model ExternalLoginsModel
+@{
+    ViewData["Title"] = "Harici Girişleri Yönet";
+    ViewData["ActivePage"] = ManageNavPages.ExternalLogins;
+}
+
+<partial name="_StatusMessage" for="StatusMessage" />
+
+<div class="container py-3 py-md-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+
+            <div class="card border-0 shadow-sm" style="border-radius:1rem;">
+                <div class="card-body p-4 p-md-5">
+
+                    <!-- Başlık -->
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width:52px;height:52px;background:#e7f1ff;">
+                            <!-- Harici giriş simgesi -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="#0d6efd" viewBox="0 0 16 16" aria-hidden="true">
+                                <path d="M13.5 1a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-1 0V2.707L6.854 8.854a.5.5 0 1 1-.708-.708L12.293 2H10.5a.5.5 0 0 1 0-1h3z" />
+                                <path d="M13 10.5a.5.5 0 0 0-.5-.5H3.707l1.147-1.146a.5.5 0 1 0-.708-.708l-2 2a.498.498 0 0 0-.106.168.498.498 0 0 0-.032.11A.5.5 0 0 0 2 10.5v3a.5.5 0 0 0 1 0v-1.793l6.146 6.147a.5.5 0 0 0 .708-.708L3.707 12H12.5a.5.5 0 0 0 .5-.5z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="h4 mb-0">@ViewData["Title"]</h1>
+                            <div class="text-muted small">Google, Facebook gibi harici hesapları yönetin</div>
+                        </div>
+                    </div>
+
+                    @if (Model.CurrentLogins?.Count > 0)
+                    {
+                        <div class="mb-4">
+                            <h5 class="fw-semibold mb-3">Bağlı Hesaplarınız</h5>
+                            <div class="table-responsive">
+                                <table class="table align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th scope="col">Sağlayıcı</th>
+                                            <th scope="col" class="text-end">İşlem</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var login in Model.CurrentLogins)
+                                        {
+                                            <tr>
+                                                <td id="@($"login-provider-{login.LoginProvider}")" class="fw-medium">
+                                                    @login.ProviderDisplayName
+                                                </td>
+                                                <td class="text-end">
+                                                    @if (Model.ShowRemoveButton)
+                                                    {
+                                                        <form id="@($"remove-login-{login.LoginProvider}")"
+                                                              asp-page-handler="RemoveLogin"
+                                                              method="post"
+                                                              class="d-inline">
+                                                            <input asp-for="@login.LoginProvider" name="LoginProvider" type="hidden" />
+                                                            <input asp-for="@login.ProviderKey" name="ProviderKey" type="hidden" />
+                                                            <button type="submit"
+                                                                    class="btn btn-outline-danger btn-sm"
+                                                                    title="@login.ProviderDisplayName hesabınızı kaldır">
+                                                                <i class="bi bi-x-circle me-1"></i>Kaldır
+                                                            </button>
+                                                        </form>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted small">Kaldırılamaz</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-secondary mb-4" role="alert">
+                            Henüz hesabınıza bağlı bir harici giriş bulunmamaktadır.
+                        </div>
+                    }
+
+                    @if (Model.OtherLogins?.Count > 0)
+                    {
+                        <div class="mb-2">
+                            <h5 class="fw-semibold mb-2">Yeni Harici Hesap Ekle</h5>
+                            <p class="text-muted small mb-3">
+                                Mevcut hesabınıza başka bir hizmetle giriş ekleyebilirsiniz.
+                            </p>
+                            <form id="link-login-form" asp-page-handler="LinkLogin" method="post">
+                                <div id="socialLoginList" class="d-flex flex-wrap gap-2">
+                                    @foreach (var provider in Model.OtherLogins)
+                                    {
+                                        <button id="@($"link-login-button-{provider.Name}")"
+                                                type="submit"
+                                                name="provider"
+                                                value="@provider.Name"
+                                                class="btn btn-outline-primary d-flex align-items-center gap-2 px-3"
+                                                title="@provider.DisplayName hesabınızla giriş yapın">
+                                            <i class="bi bi-box-arrow-in-right"></i> @provider.DisplayName
+                                        </button>
+                                    }
+                                </div>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-light border mt-3 text-muted small">
+                            Eklenebilecek başka bir harici giriş seçeneği bulunmuyor.
+                        </div>
+                    }
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

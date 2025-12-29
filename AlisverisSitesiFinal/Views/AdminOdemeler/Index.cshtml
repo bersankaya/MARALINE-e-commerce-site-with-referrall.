@@ -1,0 +1,300 @@
+﻿@model List<AlisverisSitesiFinal.Models.ViewModels.OdemeDagitimViewModel>
+@{
+    ViewData["Title"] = "Ödemeler / Dağıtım";
+
+    bool IsPending(AlisverisSitesiFinal.Models.ViewModels.OdemeDagitimViewModel x) =>
+        x.SonTalepId.HasValue && string.Equals(x.SonTalepDurum, "Beklemede", StringComparison.OrdinalIgnoreCase);
+
+    var pendingList = Model?.Where(IsPending).ToList() ?? new List<AlisverisSitesiFinal.Models.ViewModels.OdemeDagitimViewModel>();
+    var otherList = Model?.Where(x => !IsPending(x)).ToList() ?? new List<AlisverisSitesiFinal.Models.ViewModels.OdemeDagitimViewModel>();
+
+    var totalCount = Model?.Count ?? 0;
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
+        <h2 class="m-0">Ödemeler / Dağıtım</h2>
+
+        <!-- Aylık pasif akışları -->
+        <form asp-controller="AdminOdemeler" asp-action="CalistirAylikPasif" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button class="btn btn-outline-primary">Aylık Pasif Gelir Dağıt</button>
+        </form>
+
+        <form asp-controller="AdminOdemeler" asp-action="AylikPasifiYukle" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-primary"
+                    onclick="return confirm('Bu ay için pasif bakiyeleri CAP kadar doldurulsun mu? (Ayda sadece bir kez yüklenir)')">
+                Aylık Pasifi Yükle
+            </button>
+        </form>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger rounded-4">@TempData["ErrorMessage"]</div>
+    }
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success rounded-4">@TempData["SuccessMessage"]</div>
+    }
+
+    <!-- Hızlı filtre -->
+    <div class="row g-2 mb-3">
+        <div class="col-12 col-md-6">
+            <input type="text" id="filterBox" class="form-control" placeholder="İsme / IBAN'a göre filtrele...">
+        </div>
+        <div class="col-12 col-md-6 text-md-end small text-muted d-flex align-items-center justify-content-md-end">
+            Toplam kullanıcı: @totalCount • Beklemede: @pendingList.Count • Diğer: @otherList.Count
+        </div>
+    </div>
+
+    <!-- LİSTE 1: Beklemede Talepler (Açık) -->
+    <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <div class="fw-semibold">
+                Beklemede Talepler
+                <span class="badge bg-secondary">@pendingList.Count</span>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePending" aria-expanded="true" aria-controls="collapsePending">
+                Aç/Kapa
+            </button>
+        </div>
+        <div id="collapsePending" class="collapse show">
+            <div class="card-body">
+                @if (pendingList.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle" id="tablePending">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Kullanıcı</th>
+                                    <th>IBAN</th>
+                                    <th class="text-end">Toplam Kazanç</th>
+                                    <th class="text-end">Aylık (Pasif)</th>
+                                    <th>Son Talep</th>
+                                    <th class="text-end">İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var u in pendingList)
+                                {
+                                    <tr class="row-pending" data-name="@u.AdSoyad" data-iban="@u.IBAN">
+                                        <td class="fw-semibold">@u.AdSoyad</td>
+                                        <td>@(string.IsNullOrWhiteSpace(u.IBAN) ? Html.Raw("<span class='text-muted'>—</span>") : u.IBAN)</td>
+                                        <td class="text-end">@u.ToplamKazanc.ToString("C2")</td>
+                                        <td class="text-end">
+                                            @if (u.AylikKazanilanPara > 0)
+                                            {
+                                                <span class="badge bg-info-subtle text-info-emphasis">@u.AylikKazanilanPara.ToString("C2")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                <div><strong>#@u.SonTalepId</strong> • @u.SonTalepDurum</div>
+                                                <div>@(u.SonTalepTutar?.ToString("C2")) • @(u.SonTalepTarihi?.ToString("dd.MM.yyyy HH:mm"))</div>
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-flex flex-column flex-lg-row gap-2 justify-content-end">
+                                                <!-- Talep ONAYLA -->
+                                                <form asp-controller="AdminOdemeler"
+                                                      asp-action="TalepOnayla"
+                                                      asp-route-id="@u.SonTalepId"
+                                                      method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button class="btn btn-success btn-sm">
+                                                        <i class="bi bi-check2-circle"></i> Onayla
+                                                    </button>
+                                                </form>
+
+                                                <!-- Talep REDDET -->
+                                                <form asp-controller="AdminOdemeler"
+                                                      asp-action="TalepReddet"
+                                                      asp-route-id="@u.SonTalepId"
+                                                      method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="text" name="neden" class="form-control form-control-sm d-inline-block"
+                                                           style="max-width:220px" placeholder="Reddetme nedeni (opsiyonel)" />
+                                                    <button class="btn btn-outline-danger btn-sm">
+                                                        <i class="bi bi-x-circle"></i> Reddet
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-center mt-2">
+                        <button id="btnMorePending" class="btn btn-outline-secondary btn-sm" style="display:none;">+ 50 satır daha</button>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted">Beklemede talep yok.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- LİSTE 2: Tüm Kayıtlar (Kapalı) -->
+    <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <div class="fw-semibold">
+                Tüm Kayıtlar
+                <span class="badge bg-secondary">@otherList.Count</span>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAll" aria-expanded="false" aria-controls="collapseAll">
+                Aç/Kapa
+            </button>
+        </div>
+        <div id="collapseAll" class="collapse">
+            <div class="card-body">
+                @if (otherList.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle" id="tableAll">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Kullanıcı</th>
+                                    <th>IBAN</th>
+                                    <th class="text-end">Toplam Kazanç</th>
+                                    <th class="text-end">Aylık (Pasif)</th>
+                                    <th>Son Talep</th>
+                                    <th class="text-end">İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var u in otherList)
+                                {
+                                    var talepBeklemede = string.Equals(u.SonTalepDurum, "Beklemede", StringComparison.OrdinalIgnoreCase);
+                                    <tr class="row-all" data-name="@u.AdSoyad" data-iban="@u.IBAN">
+                                        <td class="fw-semibold">@u.AdSoyad</td>
+                                        <td>@(string.IsNullOrWhiteSpace(u.IBAN) ? Html.Raw("<span class='text-muted'>—</span>") : u.IBAN)</td>
+                                        <td class="text-end">@u.ToplamKazanc.ToString("C2")</td>
+                                        <td class="text-end">
+                                            @if (u.AylikKazanilanPara > 0)
+                                            {
+                                                <span class="badge bg-info-subtle text-info-emphasis">@u.AylikKazanilanPara.ToString("C2")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (u.SonTalepId.HasValue)
+                                            {
+                                                <div class="small">
+                                                    <div><strong>#@u.SonTalepId</strong> • @u.SonTalepDurum</div>
+                                                    <div>@(u.SonTalepTutar?.ToString("C2")) • @(u.SonTalepTarihi?.ToString("dd.MM.yyyy HH:mm"))</div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">Talep yok</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-flex flex-column flex-lg-row gap-2 justify-content-end">
+                                                @if (talepBeklemede && u.SonTalepId.HasValue)
+                                                {
+                                                    <!-- Talep ONAYLA -->
+                                                    <form asp-controller="AdminOdemeler"
+                                                          asp-action="TalepOnayla"
+                                                          asp-route-id="@u.SonTalepId"
+                                                          method="post" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <button class="btn btn-success btn-sm">
+                                                            <i class="bi bi-check2-circle"></i> Onayla
+                                                        </button>
+                                                    </form>
+
+                                                    <!-- Talep REDDET -->
+                                                    <form asp-controller="AdminOdemeler"
+                                                          asp-action="TalepReddet"
+                                                          asp-route-id="@u.SonTalepId"
+                                                          method="post" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="text" name="neden" class="form-control form-control-sm d-inline-block"
+                                                               style="max-width:220px" placeholder="Reddetme nedeni (opsiyonel)" />
+                                                        <button class="btn btn-outline-danger btn-sm">
+                                                            <i class="bi bi-x-circle"></i> Reddet
+                                                        </button>
+                                                    </form>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-center mt-2">
+                        <button id="btnMoreAll" class="btn btn-outline-secondary btn-sm" style="display:none;">+ 50 satır daha</button>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted">Kayıt yok.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info rounded-4 mt-3 small">
+        <strong>İpucu:</strong> Sadece bekleyen taleplerle çalışmak için üstteki bölümü açık bırak, diğeri kapalı kalsın.
+        Tablolar büyükse ilk 50 satır gösterilir; butonla daha fazlasını yükleyebilirsin.
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Hızlı filtre (her iki tabloya uygula)
+        const filterBox = document.getElementById('filterBox');
+        function applyFilter() {
+            const q = (filterBox?.value || '').trim().toLowerCase();
+            ['row-pending','row-all'].forEach(cls => {
+                document.querySelectorAll('.' + cls).forEach(tr => {
+                    const name = (tr.dataset.name || '').toLowerCase();
+                    const iban = (tr.dataset.iban || '').toLowerCase();
+                    const show = !q || name.includes(q) || iban.includes(q);
+                    tr.style.display = show ? '' : 'none';
+                });
+            });
+        }
+        filterBox?.addEventListener('input', applyFilter);
+
+        // Load more yardımcı
+        function makeLoadMore(rowSelector, btnId, pageSize){
+            const rows = Array.from(document.querySelectorAll(rowSelector));
+            if (rows.length <= pageSize) return; // gerek yok
+            rows.slice(pageSize).forEach(r => r.style.display = 'none');
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            btn.style.display = '';
+            let shown = pageSize;
+            btn.addEventListener('click', function(){
+                const next = shown + pageSize;
+                rows.slice(shown, next).forEach(r => r.style.display = '');
+                shown = next;
+                if (shown >= rows.length) btn.style.display = 'none';
+                applyFilter(); // filtre açıksa yeni açılan satırlara da uygula
+            });
+        }
+
+        // İlk 50 satırı göster, sonrasını yükle
+        document.addEventListener('DOMContentLoaded', function(){
+            makeLoadMore('.row-pending', 'btnMorePending', 50);
+            makeLoadMore('.row-all', 'btnMoreAll', 50);
+        });
+    </script>
+}

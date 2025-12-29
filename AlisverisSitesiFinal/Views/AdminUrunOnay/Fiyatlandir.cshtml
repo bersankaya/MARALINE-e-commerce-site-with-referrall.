@@ -1,0 +1,75 @@
+﻿@model AlisverisSitesiFinal.Models.Urun
+@{
+    ViewData["Title"] = "Ürün Fiyatlandır";
+}
+
+<div class="container py-4">
+    <h2 class="mb-3">Ürün Fiyatlandır</h2>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <img src="@(string.IsNullOrWhiteSpace(Model.ResimUrl) ? "/images/placeholders/no-image.png" : Model.ResimUrl)"
+                         alt="@Model.Ad" class="img-fluid w-100 mb-3" style="max-height:240px; object-fit:contain;" />
+                    <div class="fw-semibold">@Model.Ad</div>
+                    <div class="text-muted">@Model.Kategori?.Ad</div>
+                    <div class="small text-muted mt-2">
+                        Satıcı Teklifi:
+                        <strong>@(Model.SaticiTeklifFiyati.HasValue? Model.SaticiTeklifFiyati.Value.ToString("C") : "-")</strong>
+                    </div>
+                    <div class="small text-muted">Eklenme: @Model.EklenmeTarihi.ToString("dd.MM.yyyy HH:mm")</div>
+                    @if (Model.Durum == AlisverisSitesiFinal.Models.UrunDurum.Reddedildi)
+                    {
+                        <div class="mt-2"><span class="badge bg-danger">Reddedildi</span></div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form asp-action="Fiyatlandir" method="post" class="row g-3">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Admin Fiyatı</label>
+                            <input name="fiyatAdmin" type="number" step="0.01" min="0.01" class="form-control" required />
+                            <div class="form-text">Sitede görünecek satış fiyatı.</div>
+                        </div>
+
+                        <div class="col-12 col-md-6 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="yayinaAl" id="yayinaAl" checked />
+                                <label class="form-check-label" for="yayinaAl">Yayına Al</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12 d-flex gap-2 mt-2">
+                            <button type="submit" class="btn btn-primary">Kaydet</button>
+                            <a asp-action="Bekleyenler" class="btn btn-outline-secondary">Listeye Dön</a>
+                        </div>
+                    </form>
+
+                    <hr class="my-4" />
+
+                    <form asp-action="Reddet" method="post" onsubmit="return confirm('Bu ürünü reddetmek istiyor musunuz?')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-danger">Ürünü Reddet</button>
+                            <a asp-action="Bekleyenler" class="btn btn-link">Vazgeç</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

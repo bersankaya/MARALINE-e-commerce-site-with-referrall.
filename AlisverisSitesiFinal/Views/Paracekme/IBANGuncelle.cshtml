@@ -1,0 +1,197 @@
+﻿@model AlisverisSitesiFinal.Models.IBANGuncelleViewModel
+@{
+    ViewData["Title"] = "IBAN Güncelle";
+
+    var bankaAd = (string?)ViewData["BankaAd"] ?? "Bilinmeyen Banka";
+    var bankaLogo = (string?)ViewData["BankaLogo"] ?? "/images/banks/generic-bank.svg";
+    var esik = (decimal?)ViewData["Eşik"] ?? 4000m; // varsayılan 4000
+}
+
+<!-- Ödeme Uyarı Banner(ları) -->
+<div class="odeme-banner" role="note" aria-label="Ödeme Bilgilendirme">
+    <i class="bi bi-info-circle-fill"></i>
+    <div class="odeme-banner-body">
+        <p>
+            Eğer <b>@esik.ToString("N0") ₺</b> eşiği geçmişseniz ve iade süresi olan 14 gün de dolmuşsa,
+            onaylanan para çekme talepleri her ayın <strong>1’inde</strong> ödenir.
+        </p>
+    </div>
+</div>
+
+<div class="odeme-banner odeme-banner--warn" role="note" aria-label="Uyarı">
+    <i class="bi bi-exclamation-circle-fill"></i>
+    <div class="odeme-banner-body">
+        <p>Şartlar sağlanmamışsa para çekme talepleri reddedilir.</p>
+    </div>
+</div>
+
+<h2 class="mb-4 fw-bold text-primary text-center">@ViewData["Title"]</h2>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger shadow-sm">@TempData["Error"]</div>
+            }
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success shadow-sm">@TempData["Success"]</div>
+            }
+
+            <form asp-action="IBANGuncelle" method="post" class="card p-4 shadow-lg border-0 rounded-4">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Ad Soyad</label>
+                    <input class="form-control form-control-lg rounded-3 shadow-sm" value="@Model.AdSoyad" readonly />
+                    <small class="text-muted">Ad Soyad bu sayfadan değiştirilemez.</small>
+                </div>
+
+                <div class="mb-1">
+                    <label asp-for="IBAN" class="form-label fw-semibold"></label>
+                    <input asp-for="IBAN"
+                           class="form-control form-control-lg rounded-3 shadow-sm"
+                           placeholder="TR________________________"
+                           id="ibanInput" inputmode="text" autocomplete="off" />
+                    <span asp-validation-for="IBAN" class="text-danger"></span>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                    <img id="bankaLogo" src="@bankaLogo" alt="Banka Logosu"
+                         style="width:26px;height:26px;object-fit:contain;" />
+                    <span id="bankaAd" class="badge rounded-pill text-bg-light border px-3 py-2 shadow-sm">@bankaAd</span>
+                    <small class="text-muted ms-auto">IBAN toplam 26 karakterdir.</small>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary btn-lg px-4 shadow-sm">💾 Kaydet</button>
+                    <a asp-action="Create" class="btn btn-outline-secondary btn-lg px-4 shadow-sm">← Talep Oluştur</a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    /* ===== BANNER ===== */
+    .odeme-banner {
+        --c-bg-start: #e8f6ff;
+        --c-bg-end: #d6f0ff;
+        --c-text: #0b3b4a;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        background: linear-gradient(90deg,var(--c-bg-start),var(--c-bg-end));
+        color: var(--c-text);
+        padding: 12px 14px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,.06);
+    }
+
+    .odeme-banner--warn {
+        --c-bg-start: #ffecec;
+        --c-bg-end: #ffe1e1;
+        --c-text: #7a1d1d;
+    }
+
+    .odeme-banner i {
+        font-size: 1.25rem;
+        line-height: 1;
+        margin-top: 2px;
+        flex: 0 0 auto;
+    }
+
+    .odeme-banner-body {
+        min-width: 0; /* flex shrink fix */
+    }
+
+        .odeme-banner-body p {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 500;
+            line-height: 1.5;
+            word-break: normal; /* kelimeleri bölme */
+            overflow-wrap: anywhere; /* sadece çok uzun bloklarda kır */
+            hyphens: auto;
+        }
+
+    .odeme-banner strong {
+        font-weight: 700;
+    }
+
+    /* ===== FORM ===== */
+    .form-label {
+        margin-bottom: .35rem;
+    }
+
+    .card {
+        border-radius: 16px;
+    }
+
+    /* ===== MOBILE TUNING ===== */
+    @@media (max-width: 576px) {
+        .odeme-banner
+
+    {
+        padding: 10px 12px;
+        gap: 10px;
+        border-radius: 10px;
+    }
+
+    .odeme-banner i {
+        font-size: 1.1rem;
+        margin-top: 3px;
+    }
+
+    .odeme-banner-body p {
+        font-size: .95rem; /* mobilde bir tık küçült */
+    }
+
+    .btn.btn-lg {
+        padding: .6rem 1rem;
+        font-size: 1rem;
+    }
+
+    }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const input  = document.getElementById('ibanInput');
+            const adEl   = document.getElementById('bankaAd');
+            const logoEl = document.getElementById('bankaLogo');
+
+            function parseBank(iban) {
+                if (!iban) return { ad: 'Bilinmeyen Banka', logo: '/images/banks/generic-bank.svg' };
+                iban = iban.replace(/\s+/g, '').toUpperCase();
+                if (!(iban.startsWith('TR') && iban.length >= 9)) return { ad: 'Bilinmeyen Banka', logo: '/images/banks/generic-bank.svg' };
+                const kod = iban.substring(4, 9);
+                switch (kod) {
+                    case '00010': return { ad: 'Ziraat Bankası', logo: '/images/banks/ziraat.jpg' };
+                    case '00062': return { ad: 'VakıfBank', logo: '/images/banks/vakifbank.png' };
+                    case '00015': return { ad: 'Halkbank', logo: '/images/banks/halkbank.png' };
+                    case '00134': return { ad: 'İş Bankası', logo: '/images/banks/isbank.jpeg' };
+                    case '00146': return { ad: 'Garanti BBVA', logo: '/images/banks/garanti.png' };
+                    case '00067': return { ad: 'Yapı Kredi', logo: '/images/banks/yapikredi.png' };
+                    case '00032': return { ad: 'TEB', logo: '/images/banks/TEB.png' };
+                    default:      return { ad: 'Banka Kodu: ' + kod, logo: '/images/banks/generic-bank.svg' };
+                }
+            }
+
+            function onIbanChange() {
+                const info = parseBank(input.value);
+                adEl.textContent = info.ad;
+                logoEl.src = info.logo;
+            }
+
+            input.addEventListener('input', onIbanChange);
+            onIbanChange(); // sayfa açıldığında bir kez çalıştır
+        })();
+    </script>
+}

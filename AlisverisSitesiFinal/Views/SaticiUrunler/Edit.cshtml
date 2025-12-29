@@ -1,0 +1,299 @@
+﻿@model AlisverisSitesiFinal.Models.Urun
+@using System
+@using System.IO
+@{
+    ViewData["Title"] = "Ürün Düzenle";
+
+    // Mevcut ek görselleri (ana görselle aynı klasör + ad kökü) keşfet
+    var gallery = new List<string>();
+    if (!string.IsNullOrWhiteSpace(Model?.ResimUrl))
+    {
+        try
+        {
+            var wwwroot = System.IO.Path.Combine(System.AppContext.BaseDirectory, "..", "wwwroot");
+            wwwroot = System.IO.Path.GetFullPath(wwwroot);
+
+            var fiziksel = System.IO.Path.Combine(
+                wwwroot,
+                Model.ResimUrl.TrimStart('/').Replace("/", System.IO.Path.DirectorySeparatorChar.ToString())
+            );
+            var dir = System.IO.Path.GetDirectoryName(fiziksel);
+            var stem = System.IO.Path.GetFileNameWithoutExtension(fiziksel);
+
+            if (!string.IsNullOrEmpty(dir) && System.IO.Directory.Exists(dir))
+            {
+                var files = System.IO.Directory.GetFiles(dir)
+                    .Where(p =>
+                    {
+                        var name = System.IO.Path.GetFileNameWithoutExtension(p);
+                        if (name.Equals(stem, StringComparison.OrdinalIgnoreCase)) return false;
+                        return name.StartsWith(stem + "_", StringComparison.OrdinalIgnoreCase)
+                            || name.StartsWith(stem + "-", StringComparison.OrdinalIgnoreCase)
+                            || name.StartsWith(stem + ".", StringComparison.OrdinalIgnoreCase);
+                    })
+                    .OrderBy(p => p)
+                    .Take(24)
+                    .Select(p =>
+                    {
+                        var rel = System.IO.Path.GetRelativePath(wwwroot, p).Replace("\\", "/");
+                        return "/" + rel.TrimStart('/');
+                    })
+                    .ToList();
+
+                gallery.AddRange(files);
+            }
+        }
+        catch { /* erişim hatası olursa sessiz geç */ }
+    }
+}
+
+<div class="container my-4">
+    <h2 class="mb-3">Ürün Düzenle</h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger rounded-4">@TempData["ErrorMessage"]</div>
+    }
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success rounded-4">@TempData["SuccessMessage"]</div>
+    }
+
+    <form asp-action="Edit" asp-route-id="@Model!.Id" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+        @Html.AntiForgeryToken()
+
+        <div class="row g-3">
+            <div class="col-12 col-md-8">
+                <div class="mb-3">
+                    <label asp-for="Ad" class="form-label"></label>
+                    <input asp-for="Ad" class="form-control" />
+                    <span asp-validation-for="Ad" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Aciklama" class="form-label"></label>
+                    <textarea asp-for="Aciklama" rows="4" class="form-control"></textarea>
+                    <span asp-validation-for="Aciklama" class="text-danger"></span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="StokAdedi" class="form-label"></label>
+                        <input asp-for="StokAdedi" class="form-control" />
+                        <span asp-validation-for="StokAdedi" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Kategori</label>
+                        <select asp-for="KategoriId" asp-items="ViewBag.Kategoriler" class="form-select"></select>
+                        <span asp-validation-for="KategoriId" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <hr />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="SaticiTeklifFiyati" class="form-label">Satıcı Teklif Fiyatı <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input asp-for="SaticiTeklifFiyati"
+                                   class="form-control"
+                                   type="number"
+                                   inputmode="decimal"
+                                   step="0.01"
+                                   min="0.01"
+                                   required
+                                   data-val="true"
+                                   data-val-required="Satıcı teklif fiyatı zorunludur." />
+                            <span class="input-group-text">₺</span>
+                        </div>
+                        <div class="form-text">Bu fiyat admin onayından sonra yayına alınır.</div>
+                        <span asp-validation-for="SaticiTeklifFiyati" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Mevcut Resim</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="@(string.IsNullOrWhiteSpace(Model!.ResimUrl) ? "/images/no-image.png" : Model.ResimUrl)" class="rounded" style="width:72px;height:72px;object-fit:cover" />
+                            <div class="w-100">
+                                <label class="form-label mb-1">Yeni Resim (opsiyonel)</label>
+                                <input type="file" name="YeniResim" class="form-control mb-2" accept="image/*" />
+
+                                <!-- Ek görseller (çoklu) -->
+                                <label class="form-label mb-1">Ek Görseller (opsiyonel)</label>
+                                <input type="file" name="EkResimler" id="EkResimler" class="form-control" accept="image/*" multiple />
+                                <small class="text-muted d-block">Birden fazla görsel seçebilirsiniz (öneri: ≤ 6 adet, ≤ 5 MB).</small>
+                                <div id="ekResimUyari" class="text-danger small mt-1" style="display:none;"></div>
+                            </div>
+                        </div>
+
+                        @* Mevcut ek görsellerin küçük önizlemesi *@
+                        @if (gallery.Any())
+                        {
+                            <div class="mt-2">
+                                <div class="small text-muted mb-1">Kayıtlı ek görseller:</div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var g in gallery)
+                                    {
+                                        <div class="border rounded" style="width:72px;height:72px;overflow:hidden;background:#fff;">
+                                            <img src="@g" alt="ek" style="width:100%;height:100%;object-fit:cover;" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @* Yeni seçilenlerin canlı önizlemesi *@
+                        <div id="ekResimPreview" class="d-flex flex-wrap gap-2 mt-2"></div>
+                    </div>
+                </div>
+
+                <hr />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" asp-for="RenkSecimiVar" />
+                            <label class="form-check-label" asp-for="RenkSecimiVar">Renk Seçimi Var</label>
+                        </div>
+                        <label asp-for="RenkSecenekleri" class="form-label"></label>
+                        <input asp-for="RenkSecenekleri" class="form-control" placeholder="Kırmızı, Mavi, Siyah" />
+                        <span asp-validation-for="RenkSecenekleri" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" asp-for="BedenSecimiVar" />
+                            <label class="form-check-label" asp-for="BedenSecimiVar">Beden Seçimi Var</label>
+                        </div>
+                        <label asp-for="BedenSecenekleri" class="form-label"></label>
+                        <input asp-for="BedenSecenekleri" class="form-control" placeholder="S, M, L, XL" />
+                        <span asp-validation-for="BedenSecenekleri" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" asp-for="BoyutSecimiVar" />
+                            <label class="form-check-label" asp-for="BoyutSecimiVar">Boyut Seçimi Var</label>
+                        </div>
+                        <label asp-for="BoyutSecenekleri" class="form-label"></label>
+                        <input asp-for="BoyutSecenekleri" class="form-control" placeholder="Küçük, Orta, Büyük" />
+                        <span asp-validation-for="BoyutSecenekleri" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" asp-for="NumaraSecimiVar" />
+                            <label class="form-check-label" asp-for="NumaraSecimiVar">Numara Seçimi Var</label>
+                        </div>
+                        <label asp-for="NumaraSecenekleri" class="form-label"></label>
+                        <input asp-for="NumaraSecenekleri" class="form-control" placeholder="37, 38, 39..." />
+                        <span asp-validation-for="NumaraSecenekleri" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" asp-for="KapasiteSecimiVar" />
+                            <label class="form-check-label" asp-for="KapasiteSecimiVar">Kapasite Seçimi Var</label>
+                        </div>
+                        <label asp-for="KapasiteSecenekleri" class="form-label"></label>
+                        <input asp-for="KapasiteSecenekleri" class="form-control" placeholder="64 GB, 128 GB, 256 GB" />
+                        <span asp-validation-for="KapasiteSecenekleri" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="MateryalSecenekleri" class="form-label"></label>
+                        <input asp-for="MateryalSecenekleri" class="form-control" placeholder="Pamuk, Deri, Metal..." />
+                        <span asp-validation-for="MateryalSecenekleri" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="DesenSecenekleri" class="form-label"></label>
+                        <input asp-for="DesenSecenekleri" class="form-control" placeholder="Düz, Çizgili, Kareli..." />
+                        <span asp-validation-for="DesenSecenekleri" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="alert alert-info rounded-4">
+                    <div class="fw-semibold mb-1">Notlar</div>
+                    <ul class="mb-0 small">
+                        <li><b>Satıcı Teklif Fiyatı zorunludur.</b></li>
+                        <li>Fiyat alanı <b>admin onayı</b> ile yayına alınır.</li>
+                        <li>Güncellemeden sonra ürününüz geçici olarak yayından kalkar.</li>
+                        <li>Varyasyon seçeneklerini virgülle ayırın.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            const ekInput = document.getElementById('EkResimler');
+            const preview = document.getElementById('ekResimPreview');
+            const warn = document.getElementById('ekResimUyari');
+            if (!ekInput || !preview) return;
+
+            const MAX_FILES = 6;
+            const MAX_MB = 5;
+
+            function clearPreview() {
+                preview.innerHTML = '';
+                if (warn) { warn.style.display = 'none'; warn.textContent = ''; }
+            }
+
+            function addThumb(objectUrl, name) {
+                const box = document.createElement('div');
+                box.style.width = '72px';
+                box.style.height = '72px';
+                box.style.borderRadius = '10px';
+                box.style.overflow = 'hidden';
+                box.style.boxShadow = '0 2px 8px rgba(0,0,0,.08)';
+                const img = document.createElement('img');
+                img.src = objectUrl;
+                img.alt = name || '';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                box.appendChild(img);
+                preview.appendChild(box);
+            }
+
+            ekInput.addEventListener('change', function () {
+                clearPreview();
+                const files = Array.from(ekInput.files || []);
+                if (files.length === 0) return;
+
+                if (files.length > MAX_FILES && warn) {
+                    warn.textContent = `En fazla ${MAX_FILES} görsel seçebilirsiniz. Seçilen: ${files.length}`;
+                    warn.style.display = 'block';
+                }
+
+                let shown = 0;
+                for (const f of files) {
+                    if (!f.type.startsWith('image/')) {
+                        if (warn) { warn.textContent = 'Sadece resim dosyaları yükleyebilirsiniz.'; warn.style.display = 'block'; }
+                        continue;
+                    }
+                    if (f.size > MAX_MB * 1024 * 1024) {
+                        if (warn) { warn.textContent = `Her dosya en fazla ${MAX_MB} MB olmalı: ${f.name}`; warn.style.display = 'block'; }
+                        continue;
+                    }
+                    if (shown >= MAX_FILES) continue;
+
+                    const url = URL.createObjectURL(f);
+                    addThumb(url, f.name);
+                    shown++;
+                }
+            });
+        })();
+    </script>
+}

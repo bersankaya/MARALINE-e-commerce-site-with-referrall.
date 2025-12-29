@@ -1,0 +1,64 @@
+﻿@model List<AlisverisSitesiFinal.Models.ParaCekmeTalebi>
+@{
+    ViewData["Title"] = "Para Çekme Talepleri (Admin)";
+}
+
+<h2 class="text-primary">
+    <i class="bi bi-credit-card-2-back"></i> Para Çekme Talepleri (Admin)
+</h2>
+
+@if (TempData["HataMesaji"] != null)
+{
+    <div class="alert alert-danger">@TempData["HataMesaji"]</div>
+}
+@if (TempData["BasariMesaji"] != null)
+{
+    <div class="alert alert-success">@TempData["BasariMesaji"]</div>
+}
+
+<table class="table table-bordered table-hover mt-3">
+    <thead class="table-dark">
+        <tr>
+            <th>Kullanıcı</th>
+            <th>Ad Soyad</th>
+            <th>IBAN</th>
+            <th>Tutar</th>
+            <th>Tarih</th>
+            <th>Durum</th>
+            <th>İşlem</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var talep in Model)
+        {
+            <tr>
+                <td>@talep.KullaniciAdSoyad</td>
+                <td>@talep.IBANSahibiAdSoyad</td>
+                <td>@talep.IBAN</td>
+                <td>@talep.Tutar.ToString("C")</td>
+                <td>@talep.TalepTarihi.ToShortDateString()</td>
+                <td>
+                    @if (talep.OnaylandiMi)
+                    {
+                        <span class="text-success">Onaylandı</span>
+                    }
+                    else if (talep.ReddedildiMi)
+                    {
+                        <span class="text-danger">Reddedildi</span>
+                    }
+                    else
+                    {
+                        <span class="text-warning">Bekliyor</span>
+                    }
+                </td>
+                <td>
+                    @if (!talep.OnaylandiMi && !talep.ReddedildiMi)
+                    {
+                        <a asp-action="Onayla" asp-route-id="@talep.Id" class="btn btn-success btn-sm">Onayla</a>
+                        <a asp-action="Reddet" asp-route-id="@talep.Id" class="btn btn-danger btn-sm">Reddet</a>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

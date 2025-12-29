@@ -1,0 +1,254 @@
+@model AlisverisSitesiFinal.Models.Urun
+@{
+    ViewData["Title"] = "Yeni Ürün";
+}
+<div class="container py-4">
+    <h3>Yeni Ürün</h3>
+
+    @* TÜM HATALARI GÖSTER *@
+    <div class="mb-3">
+        @Html.ValidationSummary(excludePropertyErrors: false, "", new { @class = "text-danger" })
+    </div>
+
+    @* ✅ Bildirim *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success shadow-sm">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger shadow-sm">@TempData["ErrorMessage"]</div>
+    }
+
+    @* Hata özeti *@
+    <div class="mb-3">
+        @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+    </div>
+
+    <form asp-action="Create" asp-controller="Uruns" method="post" enctype="multipart/form-data" class="row g-3">
+        @Html.AntiForgeryToken()
+
+        <div class="col-md-6">
+            <label asp-for="Ad" class="form-label"></label>
+            <input asp-for="Ad" class="form-control" />
+            <span asp-validation-for="Ad" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Kategori</label>
+            <select asp-for="KategoriId" class="form-select" asp-items="ViewBag.Kategoriler"></select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Stok</label>
+            <input asp-for="StokAdedi" class="form-control" />
+        </div>
+
+        <div class="col-12">
+            <label asp-for="Aciklama" class="form-label"></label>
+            <textarea asp-for="Aciklama" class="form-control" rows="4"></textarea>
+        </div>
+
+        @* ✅ ROL’E GÖRE ZORUNLU ALANLAR *@
+        @if (User.IsInRole("Admin"))
+        {
+            <div class="col-md-3">
+                <label class="form-label">Admin Fiyatı</label>
+                <input asp-for="FiyatAdmin" class="form-control" />
+                <small class="text-muted">Admin zorunlu</small>
+            </div>
+        }
+        else if (User.IsInRole("Satici"))
+        {
+            <div class="col-md-3">
+                <label class="form-label">Satıcı Teklif Fiyatı</label>
+                <input asp-for="SaticiTeklifFiyati" class="form-control" />
+                <small class="text-muted">Satıcı zorunlu</small>
+            </div>
+        }
+
+        <div class="col-md-6">
+            <label class="form-label">Ürün Resmi</label>
+            <input type="file" name="ResimDosyasi" class="form-control" accept="image/*" />
+            <small class="text-muted">Zorunlu — ana görsel</small>
+        </div>
+
+        @* === EK GÖRSELLER (OPSİYONEL, ÇOKLU YÜKLEME) === *@
+        <div class="col-md-6">
+            <label class="form-label">Ek Görseller (opsiyonel)</label>
+            <input type="file" name="EkResimler" id="EkResimler" class="form-control" accept="image/*" multiple />
+            <small class="text-muted d-block">En fazla 6 görsel, her biri en çok 5 MB. Sürükle-bırak veya çoklu seçim yapabilirsin.</small>
+
+            <div id="ekResimUyari" class="text-danger small mt-1" style="display:none;"></div>
+
+            <div id="ekResimPreview" class="d-flex flex-wrap gap-2 mt-2">
+                @* Seçilen görseller burada küçük kutucuklar halinde önizlenir *@
+            </div>
+        </div>
+
+        <div class="col-12"><hr /></div>
+
+        @* VARYASYON BAYRAKLARI *@
+        <div class="col-6 col-md-2 form-check">
+            <input class="form-check-input var-flag" asp-for="RenkSecimiVar" id="fRenk" />
+            <label class="form-check-label" for="fRenk">Renk</label>
+        </div>
+        <div class="col-6 col-md-2 form-check">
+            <input class="form-check-input var-flag" asp-for="BedenSecimiVar" id="fBeden" />
+            <label class="form-check-label" for="fBeden">Beden</label>
+        </div>
+        <div class="col-6 col-md-2 form-check">
+            <input class="form-check-input var-flag" asp-for="BoyutSecimiVar" id="fBoyut" />
+            <label class="form-check-label" for="fBoyut">Boyut</label>
+        </div>
+        <div class="col-6 col-md-2 form-check">
+            <input class="form-check-input var-flag" asp-for="NumaraSecimiVar" id="fNumara" />
+            <label class="form-check-label" for="fNumara">Numara</label>
+        </div>
+        <div class="col-6 col-md-2 form-check">
+            <input class="form-check-input var-flag" asp-for="KapasiteSecimiVar" id="fKapasite" />
+            <label class="form-check-label" for="fKapasite">Kapasite</label>
+        </div>
+
+        @* VARYASYON SEÇENEKLERİ (VİRGÜLLÜ) *@
+        <div class="col-md-6 var-box" data-flag="fRenk">
+            <label class="form-label">Renk Seçenekleri</label>
+            <input asp-for="RenkSecenekleri" class="form-control opt" placeholder="Siyah,Beyaz,..." />
+        </div>
+        <div class="col-md-6 var-box" data-flag="fBeden">
+            <label class="form-label">Beden Seçenekleri</label>
+            <input asp-for="BedenSecenekleri" class="form-control opt" placeholder="S,M,L,XL,..." />
+        </div>
+        <div class="col-md-6 var-box" data-flag="fBoyut">
+            <label class="form-label">Boyut Seçenekleri</label>
+            <input asp-for="BoyutSecenekleri" class="form-control opt" placeholder="30,32,34,..." />
+        </div>
+        <div class="col-md-6 var-box" data-flag="fNumara">
+            <label class="form-label">Numara Seçenekleri</label>
+            <input asp-for="NumaraSecenekleri" class="form-control opt" placeholder="36,37,38,..." />
+        </div>
+        <div class="col-md-6 var-box" data-flag="fKapasite">
+            <label class="form-label">Kapasite Seçenekleri</label>
+            <input asp-for="KapasiteSecenekleri" class="form-control opt" placeholder="64GB,128GB,..." />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Materyal Seçenekleri</label>
+            <input asp-for="MateryalSecenekleri" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Desen Seçenekleri</label>
+            <input asp-for="DesenSecenekleri" class="form-control" />
+        </div>
+
+        <div class="col-12 mt-2">
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+            <a asp-action="Index" class="btn btn-secondary">İptal</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        (function(){
+          // varyasyon inputlarını bayraklara göre göster/gizle + required yönet
+          function toggleBoxes(){
+            document.querySelectorAll('.var-box').forEach(box=>{
+              const flagId = box.getAttribute('data-flag');
+              const flag = document.getElementById(flagId);
+              const input = box.querySelector('.opt');
+              const on = flag && flag.checked;
+              box.style.display = on ? '' : 'none';
+              if(input){
+                if(on) input.setAttribute('required','required'); else input.removeAttribute('required');
+              }
+            });
+          }
+          document.querySelectorAll('.var-flag').forEach(el=>el.addEventListener('change', toggleBoxes));
+          toggleBoxes();
+
+          // === Ek Görseller: önizleme + temel doğrulamalar ===
+          const ekInput = document.getElementById('EkResimler');
+          const preview = document.getElementById('ekResimPreview');
+          const warn = document.getElementById('ekResimUyari');
+
+          if(ekInput && preview){
+            const MAX_FILES = 6;
+            const MAX_MB = 5;
+
+            function clearPreview(){
+              preview.innerHTML = '';
+              warn.style.display = 'none';
+              warn.textContent = '';
+            }
+
+            function addThumb(file, objectUrl){
+              const wrap = document.createElement('div');
+              wrap.style.width = '92px';
+              wrap.style.height = '92px';
+              wrap.style.borderRadius = '10px';
+              wrap.style.overflow = 'hidden';
+              wrap.style.position = 'relative';
+              wrap.style.boxShadow = '0 2px 8px rgba(0,0,0,.08)';
+
+              const img = document.createElement('img');
+              img.src = objectUrl;
+              img.alt = file.name;
+              img.style.width = '100%';
+              img.style.height = '100%';
+              img.style.objectFit = 'cover';
+              wrap.appendChild(img);
+
+              // küçük filename etiket
+              const cap = document.createElement('div');
+              cap.textContent = file.name.substring(0,16);
+              cap.style.position = 'absolute';
+              cap.style.left = '4px';
+              cap.style.right = '4px';
+              cap.style.bottom = '4px';
+              cap.style.fontSize = '10px';
+              cap.style.lineHeight = '1.2';
+              cap.style.padding = '2px 4px';
+              cap.style.background = 'rgba(255,255,255,.75)';
+              cap.style.borderRadius = '6px';
+              cap.style.backdropFilter = 'blur(2px)';
+              wrap.appendChild(cap);
+
+              preview.appendChild(wrap);
+            }
+
+            ekInput.addEventListener('change', function(){
+              clearPreview();
+              const files = Array.from(ekInput.files || []);
+              if(files.length === 0) return;
+
+              // Adet kontrolü
+              if(files.length > MAX_FILES){
+                warn.textContent = `En fazla ${MAX_FILES} görsel seçebilirsiniz. Seçilen: ${files.length}`;
+                warn.style.display = 'block';
+              }
+
+              let showCount = 0;
+              for(const f of files){
+                // Tip kontrolü
+                if(!f.type.startsWith('image/')){
+                  warn.textContent = 'Sadece resim dosyaları yükleyebilirsiniz.';
+                  warn.style.display = 'block';
+                  continue;
+                }
+                // Boyut kontrolü
+                if(f.size > MAX_MB * 1024 * 1024){
+                  warn.textContent = `Her bir dosya en fazla ${MAX_MB} MB olmalı: ${f.name}`;
+                  warn.style.display = 'block';
+                  continue;
+                }
+                if(showCount >= MAX_FILES) continue;
+
+                const url = URL.createObjectURL(f);
+                addThumb(f, url);
+                showCount++;
+              }
+            });
+          }
+        })();
+    </script>
+}

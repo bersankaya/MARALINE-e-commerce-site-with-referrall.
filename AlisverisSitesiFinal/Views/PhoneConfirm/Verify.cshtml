@@ -1,0 +1,36 @@
+﻿@model AlisverisSitesiFinal.Controllers.PhoneVerifyVm
+@{
+    ViewData["Title"] = "Telefon Doğrulama";
+}
+<div class="container my-4" style="max-width:480px;">
+    <h2 class="mb-3">Telefon Doğrulama</h2>
+
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info">@TempData["Info"]</div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    <form asp-action="Verify" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="UserId" value="@Model.UserId" />
+        <input type="hidden" name="Phone" value="@Model.Phone" />
+
+        <div class="mb-3">
+            <label class="form-label">Kod</label>
+            <input name="Code" class="form-control" required />
+        </div>
+
+        <button class="btn btn-primary w-100">Onayla</button>
+    </form>
+
+    <form asp-action="Resend" method="post" class="mt-2 text-center">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="userId" value="@Model.UserId" />
+        <input type="hidden" name="phone" value="@Model.Phone" />
+        <button class="btn btn-link">Kodu tekrar gönder</button>
+    </form>
+</div>

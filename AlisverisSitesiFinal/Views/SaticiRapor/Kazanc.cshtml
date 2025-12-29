@@ -1,0 +1,156 @@
+﻿@model IEnumerable<AlisverisSitesiFinal.Models.SiparisKalemi>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Kazanç Özeti";
+
+    decimal toplamCiro = (ViewBag.ToplamCiro as decimal?) ?? 0m;
+    decimal toplamSaticiKazanci = (ViewBag.ToplamSaticiKazanci as decimal?) ?? 0m;
+    decimal toplamCekilen = (ViewBag.ToplamCekilen as decimal?) ?? 0m;
+    decimal kalanBakiye = toplamSaticiKazanci - toplamCekilen;
+
+    // İsteğe bağlı: Çekim listesi ViewBag.Cekimler ile gelebilir (Tarih, Tutar, Durum)
+    var cekimler = ViewBag.Cekimler as IEnumerable<dynamic>; // anonymous/DTO support
+}
+<!-- Ödeme Uyarı Banner -->
+<div class="odeme-banner">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    Ödemeler her Ayın <strong>"birinde"</strong> yapılmaktadır.
+</div>
+<link rel="stylesheet" href="~/css/site.css" />
+
+<div class="container my-3">
+    <h2 class="mb-3">Kazanç Özeti</h2>
+
+    <!-- Özet Kartları -->
+    <div class="row g-3">
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm h-100 border-0 rounded-4">
+                <div class="card-body">
+                    <div class="small text-muted">Toplam Ciro</div>
+                    <div class="h5 fw-bold">@toplamCiro.ToString("C", new CultureInfo("tr-TR"))</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm h-100 border-0 rounded-4">
+                <div class="card-body">
+                    <div class="small text-muted">Satıcı Kazancı</div>
+                    <div class="h5 fw-bold">@toplamSaticiKazanci.ToString("C", new CultureInfo("tr-TR"))</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm h-100 border-0 rounded-4">
+                <div class="card-body">
+                    <div class="small text-muted">Çekilen Toplam</div>
+                    <div class="h5 fw-bold text-danger">@toplamCekilen.ToString("C", new CultureInfo("tr-TR"))</div>
+                    <div class="small text-muted">Onaylanan çekimler</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm h-100 border-0 rounded-4">
+                <div class="card-body">
+                    <div class="small text-muted">Kalan Bakiye</div>
+                    <div class="h5 fw-bold text-success">@kalanBakiye.ToString("C", new CultureInfo("tr-TR"))</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Çekimler (Açılır/Kapanır) -->
+    <div class="accordion my-4" id="cekimlerAcc">
+        <div class="accordion-item rounded-4 border-0 shadow-sm">
+            <h2 class="accordion-header" id="cekimlerHead">
+                <button class="accordion-button collapsed rounded-4" type="button" data-bs-toggle="collapse" data-bs-target="#cekimlerBody" aria-expanded="false" aria-controls="cekimlerBody">
+                    Çekim Geçmişi
+                </button>
+            </h2>
+            <div id="cekimlerBody" class="accordion-collapse collapse" aria-labelledby="cekimlerHead" data-bs-parent="#cekimlerAcc">
+                <div class="accordion-body">
+                    @if (cekimler != null && cekimler.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Tarih</th>
+                                        <th class="text-end">Tutar</th>
+                                        <th>Durum</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var c in cekimler)
+                                    {
+                                        <tr>
+                                            <td>@(c.Tarih is DateTime dt ? dt.ToString("dd.MM.yyyy HH:mm") : c.Tarih?.ToString())</td>
+                                            <td class="text-end">@Convert.ToDecimal(c.Tutar).ToString("C", new CultureInfo("tr-TR"))</td>
+                                            <td>
+                                                <span class="badge @(c.Durum?.ToString() == "Onaylandı" ? "bg-success" : "bg-secondary")">
+                                                    @c.Durum
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted">Henüz kayıtlı çekim bulunmuyor.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Satış Kalemleri (Tamamlananlar) -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h5 class="mb-0">Tamamlanan Satışlar</h5>
+                <small class="text-muted">Son işlemler en üstte</small>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ürün</th>
+                            <th class="text-center">Adet</th>
+                            <th class="text-end">Satış Fiyatı</th>
+                            <th class="text-end">Satıcı Payı</th>
+                            <th class="text-end">Tarih</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var k in Model)
+                        {
+                            var saticiPay = (k.Urun?.SaticiTeklifFiyati ?? 0m) * k.Miktar;
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@k.Urun?.Ad</div>
+                                    <div class="small text-muted">Sipariş #@k.SiparisId</div>
+                                </td>
+                                <td class="text-center">@k.Miktar</td>
+                                <td class="text-end">@((k.BirimFiyat * k.Miktar).ToString("C", new CultureInfo("tr-TR")))</td>
+                                <td class="text-end">@saticiPay.ToString("C", new CultureInfo("tr-TR"))</td>
+                                <td class="text-end">@k.Siparis?.SiparisTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                            </tr>
+                        }
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">Liste boş.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobilde ‘daha çok’ hissi için ufak bilgi -->
+            <div class="small text-muted">Not: Satıcı payı, ürünün <em>SaticiTeklifFiyati</em> alanına göre hesaplandı.</div>
+        </div>
+    </div>
+</div>

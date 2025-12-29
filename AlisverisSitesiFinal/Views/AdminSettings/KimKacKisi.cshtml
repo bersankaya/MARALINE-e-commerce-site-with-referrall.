@@ -1,0 +1,113 @@
+﻿@model List<AlisverisSitesiFinal.Models.ViewModels.DavetRaporSatir>
+@{
+    ViewData["Title"] = "Kim Kaç Kişi Çağırabiliyor?";
+    var sadeceAdmin = Model.Where(x => x.Rol == "Admin").ToList();
+    var sadeceMusteri = Model.Where(x => x.Rol == "Musteri").ToList();
+    var ozelLimitliler = Model.Where(x => x.LimitKaynak == "Özel").ToList();
+
+    void RenderTable(IEnumerable<AlisverisSitesiFinal.Models.ViewModels.DavetRaporSatir> data)
+    {
+        <text>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>E-posta</th>
+                            <th>Ad Soyad</th>
+                            <th>Rol</th>
+                            <th class="text-center">Etkin Limit</th>
+                            <th class="text-center">Toplam</th>
+                            <th class="text-center text-success">Aktif</th>
+                            <th class="text-center text-muted">Pasif</th>
+                            <th>Kaynak</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var x in data)
+                        {
+                            <tr>
+                                <td>@x.Email</td>
+                                <td>@x.AdSoyad</td>
+                                <td><span class="badge bg-secondary">@x.Rol</span></td>
+                                <td class="text-center fw-semibold">@x.EtkinLimit</td>
+                                <td class="text-center">@x.ToplamCocuk</td>
+                                <td class="text-center text-success">@x.AktifCocuk</td>
+                                <td class="text-center text-muted">@x.PasifCocuk</td>
+                                <td>
+                                    @if (x.LimitKaynak == "Özel")
+                                    {
+                                        <span class="badge bg-primary">Özel</span>
+                                        ;
+                                    }
+                                    else if (x.LimitKaynak == "Admin")
+                                    {
+
+                                        <span class="badge bg-warning text-dark">Admin</span>
+                                        ;
+                                    }
+                                    else
+                                    {
+
+                                        <span class="badge bg-light text-dark">Genel</span>
+                                        ;
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </text>
+;
+    }
+}
+
+<div class="container py-3">
+    <h3 class="mb-3">@ViewData["Title"]</h3>
+
+    <ul class="nav nav-tabs" id="kkkTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-all" data-bs-toggle="tab" data-bs-target="#pane-all" type="button" role="tab">
+                Tümü (@Model.Count)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-admin" data-bs-toggle="tab" data-bs-target="#pane-admin" type="button" role="tab">
+                Admin (@sadeceAdmin.Count)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-musteri" data-bs-toggle="tab" data-bs-target="#pane-musteri" type="button" role="tab">
+                Müşteri (@sadeceMusteri.Count)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-ozel" data-bs-toggle="tab" data-bs-target="#pane-ozel" type="button" role="tab">
+                Özel Limit (@ozelLimitliler.Count)
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content border-start border-end border-bottom p-3 rounded-bottom shadow-sm">
+        <div class="tab-pane fade show active" id="pane-all" role="tabpanel" aria-labelledby="tab-all">
+            @{
+                RenderTable(Model);
+            }
+        </div>
+        <div class="tab-pane fade" id="pane-admin" role="tabpanel" aria-labelledby="tab-admin">
+            @{
+                RenderTable(sadeceAdmin);
+            }
+        </div>
+        <div class="tab-pane fade" id="pane-musteri" role="tabpanel" aria-labelledby="tab-musteri">
+            @{
+                RenderTable(sadeceMusteri);
+            }
+        </div>
+        <div class="tab-pane fade" id="pane-ozel" role="tabpanel" aria-labelledby="tab-ozel">
+            @{
+                RenderTable(ozelLimitliler);
+            }
+        </div>
+    </div>
+</div>

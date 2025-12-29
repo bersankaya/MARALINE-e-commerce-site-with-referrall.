@@ -1,0 +1,198 @@
+﻿@model IEnumerable<AlisverisSitesiFinal.Models.Adres>
+@{
+    ViewData["Title"] = "Adreslerim";
+    var kullanim = ViewBag.AdresKullanimSayilari as IDictionary<int, int> ?? new Dictionary<int, int>();
+    Func<int, int> RefCount = id => kullanim.ContainsKey(id) ? kullanim[id] : 0;
+}
+
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0"><i class="bi bi-geo-alt"></i> Adreslerim</h2>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Yeni Adres Ekle
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success rounded-4">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger rounded-4">@TempData["ErrorMessage"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info rounded-4">
+            Henüz adres eklemediniz. <a asp-action="Create" class="alert-link">Buradan yeni adres ekleyin.</a>
+        </div>
+    }
+    else
+    {
+        <!-- Masaüstü: Tablo -->
+        <div class="table-responsive d-none d-md-block">
+            <table class="table align-middle table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Başlık</th>
+                        <th>İl / İlçe</th>
+                        <th>Posta Kodu</th>
+                        <th>Adres Detayı</th>
+                        <th>Telefon</th>
+                        <th class="text-center">Durum</th>
+                        <th class="text-end">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model)
+                    {
+                        var refCount = RefCount(a.Id);
+                        bool silinemez = refCount > 0;
+
+                        <tr>
+                            <td class="fw-semibold">@a.AdresBasligi</td>
+                            <td>@a.Ilce / @a.Il</td>
+                            <td>@a.PostaKodu</td>
+                            <td class="small text-muted" style="max-width:420px; word-break:break-word;">@a.AdresDetayi</td>
+                            <td>@a.Telefon</td>
+                            <td class="text-center">
+                                @if (a.IsVarsayilan)
+                                {
+                                    <span class="badge bg-primary">Varsayılan</span>
+                                }
+                                else
+                                {
+
+                                    <span class="badge bg-secondary">Diğer</span>
+                                }
+                                @if (silinemez)
+                                {
+                                    <div class="small text-muted mt-1">(@refCount siparişte kullanıldı)</div>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Edit" asp-route-id="@a.Id" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-pencil"></i> Düzenle
+                                </a>
+
+                                @if (!silinemez)
+                                {
+                                    <form asp-action="Sil" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@a.Id" />
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                onclick="return confirm('Bu adresi silmek istediğinize emin misiniz?');">
+                                            <i class="bi bi-trash3"></i> Sil
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-outline-danger btn-sm" disabled
+                                            title="Bu adres geçmiş siparişlerde kullanıldığı için silinemez.">
+                                        <i class="bi bi-lock"></i> Silinemez
+                                    </button>
+                                }
+
+                                @if (!a.IsVarsayilan)
+                                {
+                                    <form asp-action="VarsayilanYap" method="post" class="d-inline ms-1">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@a.Id" />
+                                        <button class="btn btn-outline-success btn-sm">
+                                            <i class="bi bi-check2-circle"></i> Varsayılan Yap
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobil: Kartlar -->
+        <div class="d-md-none">
+            @foreach (var a in Model)
+            {
+                var refCount = RefCount(a.Id);
+                bool silinemez = refCount > 0;
+
+                <div class="card rounded-4 shadow-sm mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div class="fw-semibold">@a.AdresBasligi</div>
+                            <div>
+                                @if (a.IsVarsayilan)
+                                {
+                                    <span class="badge bg-primary">Varsayılan</span>
+                                }
+                                else
+                                {
+
+                                    <span class="badge bg-secondary">Diğer</span>
+                                }
+                            </div>
+                        </div>
+                        @if (silinemez)
+                        {
+                            <div class="small text-muted mt-1">(@refCount siparişte kullanıldı – silinemez)</div>
+                        }
+                        <div class="small text-muted mb-1">@a.Ilce / @a.Il</div>
+
+                        <div class="small">
+                            <div class="text-muted">Adres</div>
+                            <div>@a.AdresDetayi</div>
+                        </div>
+
+                        <div class="row row-cols-2 g-2 mt-2 small">
+                            <div><span class="text-muted">Posta Kodu:</span> @a.PostaKodu</div>
+                            <div><span class="text-muted">Telefon:</span> @a.Telefon</div>
+                        </div>
+
+                        <div class="mt-3 d-flex flex-column gap-2">
+                            <a asp-action="Edit" asp-route-id="@a.Id" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-pencil"></i> Düzenle
+                            </a>
+
+                            @if (!silinemez)
+                            {
+                                <form asp-action="Sil" method="post" class="w-100">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@a.Id" />
+                                    <button type="submit" class="btn btn-outline-danger w-100"
+                                            onclick="return confirm('Bu adresi silmek istediğinize emin misiniz?');">
+                                        <i class="bi bi-trash3"></i> Sil
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-outline-danger w-100" disabled
+                                        title="Bu adres geçmiş siparişlerde kullanıldığı için silinemez.">
+                                    <i class="bi bi-lock"></i> Silinemez
+                                </button>
+                            }
+
+                            @if (!a.IsVarsayilan)
+                            {
+                                <form asp-action="VarsayilanYap" method="post" class="w-100">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@a.Id" />
+                                    <button class="btn btn-outline-success w-100">
+                                        <i class="bi bi-check2-circle"></i> Varsayılan Yap
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

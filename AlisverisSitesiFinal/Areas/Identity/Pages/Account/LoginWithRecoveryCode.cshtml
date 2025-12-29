@@ -1,0 +1,29 @@
+﻿@page
+@model LoginWithRecoveryCodeModel
+@{
+    ViewData["Title"] = "Kurtarma Kodu Doğrulama";
+}
+
+<h1>@ViewData["Title"]</h1>
+<hr />
+<p>
+    Giriş yapmak için bir kurtarma kodu kullandınız. Bu giriş, siz bir kimlik doğrulayıcı uygulama kodu girmedikçe
+    veya 2FA'yı devre dışı bırakıp tekrar giriş yapmadıkça hatırlanmayacaktır.
+</p>
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <div class="form-floating mb-3">
+                <input asp-for="Input.RecoveryCode" class="form-control" autocomplete="off" placeholder="Kurtarma Kodu" />
+                <label asp-for="Input.RecoveryCode" class="form-label"></label>
+                <span asp-validation-for="Input.RecoveryCode" class="text-danger"></span>
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Giriş Yap</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

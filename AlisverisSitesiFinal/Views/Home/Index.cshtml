@@ -1,0 +1,823 @@
+﻿@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@model AlisverisSitesiFinal.Models.HomeViewModel
+
+@{
+    ViewData["Title"] = "Anasayfa";
+}
+
+<link rel="stylesheet" href="~/css/site.css" />
+
+
+
+@if (Model.SliderUrunler.Any())
+{
+    // Ürünleri karışık sırayla göstermek için shuffle
+    var rnd = new Random();
+    var karisikUrunler = Model.SliderUrunler.OrderBy(x => rnd.Next()).ToList();
+
+    <section class="container mb-5">
+        <div id="anaSlider"
+             class="carousel slide carousel-fade shadow-lg rounded-4 overflow-hidden classy-slider"
+             data-bs-ride="carousel"
+             data-bs-interval="5000"
+             data-bs-touch="true"
+             data-bs-pause="hover">
+
+            <!-- Slider göstergeleri -->
+            <div class="carousel-indicators">
+                @for (int i = 0; i < karisikUrunler.Count; i++)
+                {
+                    <button type="button"
+                            data-bs-target="#anaSlider"
+                            data-bs-slide-to="@i"
+                            class="@(i == 0 ? "active" : "")"
+                            aria-label="Slide @(i + 1)"></button>
+                }
+            </div>
+
+            <!-- Slider içerikleri -->
+            <div class="carousel-inner">
+                @for (int i = 0; i < karisikUrunler.Count; i++)
+                {
+                    var urun = karisikUrunler[i];
+                    <div class="carousel-item @(i == 0 ? "active" : "")">
+                        <div class="slider-card position-relative overflow-hidden">
+                            <img src="@urun.ResimUrl" alt="@urun.Ad" class="d-block w-100 slider-img">
+
+                            <!-- Caption -->
+                            <div class="slider-caption d-flex flex-column justify-content-end p-4 p-md-5">
+                                <h2 class="fw-bold display-6">@urun.Ad</h2>
+                               
+                                <a href="/Uruns/Details/@urun.Id" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm mt-2">
+                                    İncele
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Slider kontrolleri -->
+            <button class="carousel-control-prev classy-control" type="button" data-bs-target="#anaSlider" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next classy-control" type="button" data-bs-target="#anaSlider" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+        </div>
+    </section>
+}
+
+<style>
+    /* Genel slider görselleri */
+    .slider-img {
+        object-fit: cover;
+        height: 450px;
+        transition: transform 0.5s ease, filter 0.5s ease;
+    }
+
+    /* Hover efekti: hafif zoom ve gölge */
+    .slider-card:hover .slider-img {
+        transform: scale(1.05);
+        filter: brightness(0.9);
+    }
+
+    /* Caption tasarımı */
+    .slider-caption {
+        position: absolute;
+        bottom: 15%;
+        left: 5%;
+        background: rgba(0,0,0,0.35);
+        border-radius: 0.5rem;
+        max-width: 55%;
+        color: #fff;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+    }
+
+    /* Hover animasyonu caption */
+    .slider-card:hover .slider-caption {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+
+    .slider-caption h2 {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .slider-caption p {
+        font-size: 1rem;
+    }
+
+    /* Mobil uyumlu */
+    @@media (max-width: 768px) {
+        .slider-caption
+
+    {
+        max-width: 80%;
+        bottom: 10%;
+        padding: 0.75rem 1rem;
+    }
+
+    .slider-caption h2 {
+        font-size: 1.5rem;
+    }
+
+    .slider-caption p {
+        font-size: 0.9rem;
+    }
+
+    }
+
+    /* Carousel kontrolleri */
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+        filter: invert(1);
+        width: 2rem;
+        height: 2rem;
+    }
+
+    /* Carousel göstergeleri */
+    .carousel-indicators button {
+        background-color: #fff;
+        opacity: 0.7;
+    }
+
+    .carousel-indicators .active {
+        opacity: 1;
+    }
+</style>
+
+
+
+<!-- ================== KATEGORİLER ================== -->
+<section>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h3 class="section-title mb-0">Kategoriler</h3>
+        <div class="d-none d-md-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary kategori-carousel-btn" data-action="prev" aria-label="Önceki">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary kategori-carousel-btn" data-action="next" aria-label="Sonraki">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="kategori-carousel-wrapper overflow-auto">
+        <div class="kategori-carousel d-flex gap-3 flex-nowrap flex-md-wrap">
+            @foreach (var kategori in Model.Kategoriler)
+            {
+                <a href="/Uruns?kategoriId=@kategori.Id" class="kategori-card text-decoration-none d-block flex-shrink-0 flex-md-shrink-1" style="width: 120px;">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="kategori-image-wrapper" style="height: 100px; overflow: hidden;">
+                            <img src="@(string.IsNullOrEmpty(kategori.ImageUrl) ? "/images/kategori-placeholder.png" : kategori.ImageUrl)"
+                                 alt="@kategori.Ad"
+                                 loading="lazy"
+                                 class="kategori-image img-fluid w-100 h-100 object-fit-cover" />
+                        </div>
+                        <div class="card-body text-center py-2">
+                            <h6 class="mb-1 text-truncate kategori-title">@kategori.Ad</h6>
+                            <small class="text-muted d-block">@* Alt bilgi eklenebilir *@</small>
+                        </div>
+                    </div>
+                </a>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- ================== STİL (site.css veya sayfa içinde) ================== -->
+<style>
+    .kategori-carousel-wrapper {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+
+        .kategori-carousel-wrapper::-webkit-scrollbar {
+            display: none; /* scrollbar gizle */
+        }
+    @@media (min-width: 768px) {
+        .kategori-carousel-wrapper
+
+    {
+        overflow: visible;
+    }
+
+    .kategori-card {
+        width: 150px !important;
+    }
+
+    }
+
+    .kategori-image-wrapper img.object-fit-cover {
+        object-fit: cover;
+    }
+</style>
+
+
+
+<!-- ================== POPÜLER ÜRÜNLER ================== -->  
+<section class="container mt-5 py-4 px-3 bg-white rounded shadow-sm border">
+    <div class="section-header d-flex justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold text-success"><i class="bi bi-stars me-2"></i>Popüler Ürünler</h3>
+        <a href="/Uruns?populer=true" class="btn btn-outline-success btn-sm fw-semibold">Tüm Ürünleri Gör</a>
+    </div>
+
+    @* Yatay kaydırmalı + maks 8 ürün: _UrunKartiListesi bu davranışı içeriyor *@
+    <partial name="_UrunKartiListesi"
+             model="Model.PopulerUrunler"
+             view-data='new ViewDataDictionary(ViewData) { ["ViewKartStili"] = "populer", ["MaxCount"] = 8 }' />
+</section>
+
+<!-- ================== AVANTAJLI ÜRÜNLER ================== -->
+@if (Model.AvantajliUrunler.Any())
+{
+    <section class="container p-4 my-5 rounded-4 shadow"
+             style="background: linear-gradient(45deg, #ff5e3a, #ff9966);">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="text-white fw-bold"><i class="bi bi-lightning-fill me-2"></i>Avantajlı Ürünler</h3>
+            <a href="/Uruns/Index?filter=avantajli" class="btn btn-light fw-semibold">Tüm Ürünleri Gör</a>
+        </div>
+
+        <partial name="_UrunKartiListesi"
+                 model="Model.AvantajliUrunler"
+                 view-data='new ViewDataDictionary(ViewData) { ["ViewKartStili"] = "avantajli", ["MaxCount"] = 8 }' />
+    </section>
+}
+
+<!-- ================== ÇOK SATANLAR ================== -->
+<section class="container mt-5 py-4 px-3 bg-white rounded shadow-sm border">
+    <div class="section-header d-flex justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold text-danger"><i class="bi bi-fire me-2"></i>Çok Satanlar</h3>
+        <a href="/Uruns?encoksatan=true" class="btn btn-outline-danger btn-sm fw-semibold">Tüm Ürünleri Gör</a>
+    </div>
+
+    <partial name="_UrunKartiListesi"
+             model="Model.EnCokSatanlar"
+             view-data='new ViewDataDictionary(ViewData) { ["ViewKartStili"] = "coksatan", ["MaxCount"] = 8 }' />
+</section>
+
+<!-- ================== YENİ TANITIM BLOĞU ================== -->
+@if (Model.SliderUrunler.Any())
+{
+    var v = Model.SliderUrunler.First();
+
+    <section class="container urun-vitrin-wrapper my-5">
+        <div class="promo-wrap rounded-5 shadow-lg p-4 p-md-5 position-relative overflow-hidden" style="background: linear-gradient(135deg, #e0f7e9, #ffffff);">
+            <div class="row align-items-center g-4">
+
+                <!-- Görsel -->
+                <div class="col-12 col-md-6 order-1 order-md-2 text-center">
+                    <div class="promo-img bg-white rounded-5 p-3 shadow-sm">
+                        <img src="@v.ResimUrl"
+                             alt="@v.Ad"
+                             loading="lazy"
+                             class="img-fluid rounded-4"
+                             style="max-height: 450px; object-fit: contain;"
+                             onerror="this.src='/images/placeholder.png'" />
+                    </div>
+                </div>
+
+                <!-- Metin -->
+                <div class="col-12 col-md-6 order-2 order-md-1">
+                    <h4 class="promo-title text-success fw-bold mb-3" style="font-size: 2rem;">@v.Ad</h4>
+                    <p class="promo-desc text-muted mb-4" style="font-size: 1.1rem; line-height: 1.6;">
+                        @v.Aciklama
+                    </p>
+                    <div class="d-flex flex-column flex-sm-row gap-3">
+                        <a href="/Uruns/Details/@v.Id"
+                           class="btn btn-success rounded-pill px-5 py-2 fw-semibold shadow-sm">
+                            Ürünü İncele
+                        </a>
+                        <a href="/Uruns"
+                           class="btn btn-outline-success rounded-pill px-5 py-2 fw-semibold shadow-sm">
+                            Daha Fazla Ürün
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Şık dekoratif element -->
+            <div class="position-absolute top-0 start-0 w-100 h-100" style="pointer-events:none; background: radial-gradient(circle at top right, rgba(0,255,0,0.05), transparent);"></div>
+            <div class="position-absolute bottom-0 end-0" style="pointer-events:none;">
+                <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+                    <circle cx="60" cy="60" r="60" fill="rgba(0,200,0,0.1)" />
+                </svg>
+            </div>
+        </div>
+    </section>
+}
+
+
+
+@* Müşteri Yorumları Bölümü (Altın İkonlu, Şık Tasarım) *@
+<section class="musteri-yorumlari py-5 bg-light">
+    <div class="container">
+        <div class="row align-items-center gy-4">
+            <div class="col-lg-4">
+                <div class="d-flex flex-column justify-content-center h-100">
+                    <h3 class="mb-3 fw-bold">Müşteri Yorumları</h3>
+                    <p class="text-muted mb-4">Gerçek kullanıcılarımızın deneyimleriyle güven kazanın. Kalite, hız ve kazanç bir arada!</p>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-outline-primary btn-sm" href="#yorumSlider" role="button" data-bs-slide="prev">
+                            <i class="bi bi-chevron-left"></i> Önceki
+                        </a>
+                        <a class="btn btn-primary btn-sm" href="#yorumSlider" role="button" data-bs-slide="next">
+                            Sonraki <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div id="yorumSlider" class="carousel slide shadow-sm" data-bs-ride="carousel" data-bs-interval="5000">
+                    <div class="carousel-inner">
+
+                        <div class="carousel-item active">
+                            <div class="card border-0 rounded-3 p-4">
+                                <div class="d-flex align-items-start gap-3">
+                                    <i class="bi bi-person-circle altin-icon"></i>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <h5 class="mb-0">Ahmet Yılmaz</h5>
+                                            <small class="text-muted"> - İstanbul</small>
+                                        </div>
+                                        <p class="mb-2 lead">Ürünler gerçekten kaliteli ve çok hızlı geldi!</p>
+                                        <div class="rating">
+                                            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="carousel-item">
+                            <div class="card border-0 rounded-3 p-4">
+                                <div class="d-flex align-items-start gap-3">
+                                    <i class="bi bi-person-circle altin-icon"></i>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <h5 class="mb-0">Elif K.</h5>
+                                            <small class="text-muted"> - Ankara</small>
+                                        </div>
+                                        <p class="mb-2 lead">Sisteme arkadaşımı davet ettim, hemen kazanç sağladım 👌</p>
+                                        <div class="rating">
+                                            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="carousel-item">
+                            <div class="card border-0 rounded-3 p-4">
+                                <div class="d-flex align-items-start gap-3">
+                                    <i class="bi bi-person-circle altin-icon"></i>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <h5 class="mb-0">Mehmet Arslan</h5>
+                                            <small class="text-muted"> - Bursa</small>
+                                        </div>
+                                        <p class="mb-2 lead">Kazanç sistemi çok iyi düşünülmüş, arkadaşlarımı da davet ettim.</p>
+                                        <div class="rating">
+                                            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="carousel-item">
+                            <div class="card border-0 rounded-3 p-4">
+                                <div class="d-flex align-items-start gap-3">
+                                    <i class="bi bi-person-circle altin-icon"></i>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <h5 class="mb-0">Ayşe Demir</h5>
+                                            <small class="text-muted"> - İzmir</small>
+                                        </div>
+                                        <p class="mb-2 lead">Ürün paketlemesi mükemmel, müşteri hizmetleri çok ilgiliydi 💖</p>
+                                        <div class="rating">
+                                            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="carousel-item">
+                            <div class="card border-0 rounded-3 p-4">
+                                <div class="d-flex align-items-start gap-3">
+                                    <i class="bi bi-person-circle altin-icon"></i>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <h5 class="mb-0">Cem B.</h5>
+                                            <small class="text-muted"> - Antalya</small>
+                                        </div>
+                                        <p class="mb-2 lead">Siteden alışveriş yaparken kazanç elde etmek çok güzel bir fikir!</p>
+                                        <div class="rating">
+                                            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i><i class="bi bi-star"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="carousel-item">
+                            <div class="card border-0 rounded-3 p-4">
+                                <div class="d-flex align-items-start gap-3">
+                                    <i class="bi bi-person-circle altin-icon"></i>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <h5 class="mb-0">Fatma Karaca</h5>
+                                            <small class="text-muted"> - Konya</small>
+                                        </div>
+                                        <p class="mb-2 lead">Ürünler beklediğimden daha iyi çıktı, herkese tavsiye ederim.</p>
+                                        <div class="rating">
+                                            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="carousel-indicators mt-3">
+                        <button type="button" data-bs-target="#yorumSlider" data-bs-slide-to="0" class="active"></button>
+                        <button type="button" data-bs-target="#yorumSlider" data-bs-slide-to="1"></button>
+                        <button type="button" data-bs-target="#yorumSlider" data-bs-slide-to="2"></button>
+                        <button type="button" data-bs-target="#yorumSlider" data-bs-slide-to="3"></button>
+                        <button type="button" data-bs-target="#yorumSlider" data-bs-slide-to="4"></button>
+                        <button type="button" data-bs-target="#yorumSlider" data-bs-slide-to="5"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .altin-icon {
+            font-size: 3rem;
+            color: #fbbf24; /* Altın rengi */
+            flex-shrink: 0;
+        }
+
+        .carousel .card {
+            background: #fff;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .carousel .lead {
+            font-size: 1rem;
+            color: #374151;
+        }
+
+        .rating i {
+            color: #f59e0b;
+            font-size: 1.05rem;
+            margin-right: 3px;
+        }
+
+        .carousel .card:hover {
+            transform: translateY(-6px);
+            transition: .25s;
+        }
+    </style>
+</section>
+
+<!-- ================== HAKKIMIZDA / ÖZELLİKLER ================== -->
+<section class="product-section container my-5">
+    <h3 class="section-title text-center mb-5 fw-bold" style="font-size:2rem; color:#28a745;">Neden Maraline?</h3>
+
+    <div class="row g-4">
+
+        <!-- Hızlı Teslimat -->
+        <div class="col-md-4">
+            <div class="feature-card position-relative p-4 h-100 text-center bg-white rounded-4 shadow-sm overflow-hidden">
+                <div class="icon-wrap mb-3 d-inline-block p-3 rounded-circle bg-success bg-opacity-10">
+                    <i class="bi bi-truck fs-2 text-success"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Hızlı Teslimat</h5>
+                <p class="text-muted">Siparişlerinizi en kısa sürede adresinize ulaştırıyoruz.</p>
+                <!-- Hover animasyonlu dekoratif element -->
+                <div class="position-absolute top-0 start-50 translate-middle opacity-25" style="pointer-events:none;">
+                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                        <circle cx="40" cy="40" r="40" fill="rgba(40,167,69,0.1)" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Güvenli Alışveriş -->
+        <div class="col-md-4">
+            <div class="feature-card position-relative p-4 h-100 text-center bg-white rounded-4 shadow-sm overflow-hidden">
+                <div class="icon-wrap mb-3 d-inline-block p-3 rounded-circle bg-success bg-opacity-10">
+                    <i class="bi bi-shield-check fs-2 text-success"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Güvenli Alışveriş</h5>
+                <p class="text-muted">SSL sertifikalı sistemimizle güvenli alışveriş yapın.</p>
+                <div class="position-absolute bottom-0 end-0 opacity-25" style="pointer-events:none;">
+                    <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                        <circle cx="30" cy="30" r="30" fill="rgba(40,167,69,0.1)" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Referansla Kazan -->
+        <div class="col-md-4">
+            <div class="feature-card position-relative p-4 h-100 text-center bg-white rounded-4 shadow-sm overflow-hidden">
+                <div class="icon-wrap mb-3 d-inline-block p-3 rounded-circle bg-success bg-opacity-10">
+                    <i class="bi bi-cash-coin fs-2 text-success"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Referansla Kazan</h5>
+                <p class="text-muted">Arkadaşlarını davet et, alışverişlerinden kazanç elde et.</p>
+                <div class="position-absolute top-50 start-50 translate-middle opacity-25" style="pointer-events:none;">
+                    <svg width="70" height="70" viewBox="0 0 70 70" fill="none">
+                        <circle cx="35" cy="35" r="35" fill="rgba(40,167,69,0.1)" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<style>
+    /* Kart hover efektleri */
+    .feature-card {
+        transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        /* İkon animasyonu */
+        .feature-card .icon-wrap i {
+            transition: transform 0.4s ease;
+        }
+
+        .feature-card:hover .icon-wrap i {
+            transform: scale(1.2) rotate(10deg);
+        }
+</style>
+
+
+<!-- ================== CTA BLOĞU ================== -->
+<section class="cta-section position-relative my-5">
+    <div class="container">
+        <div class="cta-card rounded-5 shadow-lg text-center p-5 position-relative overflow-hidden" style="background: linear-gradient(135deg, #28a745, #1fae54);">
+
+            <!-- Dekoratif üst sağ daire -->
+            <div class="position-absolute top-0 end-0 translate-middle opacity-10" style="pointer-events:none;">
+                <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+                    <circle cx="60" cy="60" r="60" fill="white" />
+                </svg>
+            </div>
+
+            <!-- Dekoratif alt sol daire -->
+            <div class="position-absolute bottom-0 start-0 translate-middle opacity-10" style="pointer-events:none;">
+                <svg width="100" height="100" viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="50" r="50" fill="white" />
+                </svg>
+            </div>
+
+            <!-- Başlık ve açıklama -->
+            <h4 class="fw-bold mb-3 text-white" style="font-size:2rem;">Maraline ile Güvenli Alışveriş</h4>
+            <p class="mb-4 text-white-50 fs-5">Kaliteli ürünler, avantajlı fiyatlar ve kullanıcı odaklı sistemimizle yanınızdayız.</p>
+
+            <!-- Buton -->
+            <a href="/Identity/Account/Register"
+               class="btn btn-light btn-lg rounded-pill fw-semibold px-5 py-3 shadow-sm"
+               style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                Hemen Kayıt Ol
+            </a>
+        </div>
+    </div>
+</section>
+
+<style>
+    /* Hover efekti */
+    .cta-card a.btn:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+</style>
+
+
+<!-- ================== SSS ================== -->
+<section class="container mt-5 mb-5">
+    <button class="btn btn-outline-success w-100 fw-bold mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#sssCollapse" aria-expanded="false" aria-controls="sssCollapse">
+        Sık Sorulan Sorular
+    </button>
+
+    <div class="collapse" id="sssCollapse">
+        <div class="accordion" id="sssAccordion">
+
+            <!-- S1 -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru1">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cevap1" aria-expanded="true" aria-controls="cevap1">
+                        Referans kodu nasıl aktif hale gelir?
+                    </button>
+                </h2>
+                <div id="cevap1" class="accordion-collapse collapse show" aria-labelledby="soru1" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        Referans kodunuzun aktif olması için kayıt olan kişinin 4000 TL ve üzeri alışveriş yapması gerekir.
+                    </div>
+                </div>
+            </div>
+
+            <!-- S2 -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru2">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap2" aria-expanded="false" aria-controls="cevap2">
+                        Kayıt olurken hangi bilgileri girmem gerekiyor?
+                    </button>
+                </h2>
+                <div id="cevap2" class="accordion-collapse collapse" aria-labelledby="soru2" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        Kayıt sırasında ad-soyad, e-posta, telefon numarası ve bir şifre belirlemeniz gerekir. Telefon ve e-posta onayı zorunludur.
+                    </div>
+                </div>
+            </div>
+
+            <!-- S3 -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru3">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap3" aria-expanded="false" aria-controls="cevap3">
+                        IBAN ile çekim yaparken nelere dikkat etmeliyim?
+                    </button>
+                </h2>
+                <div id="cevap3" class="accordion-collapse collapse" aria-labelledby="soru3" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        IBAN bilgileri ile çekim yapılabilmesi için hesap sahibi ad-soyadı, sisteme kayıtlı kişiyle aynı olmalıdır.
+                    </div>
+                </div>
+            </div>
+
+            <!-- S4 -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru4">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap4" aria-expanded="false" aria-controls="cevap4">
+                        Sipariş verdikten sonra kargo süreci nasıl işler?
+                    </button>
+                </h2>
+                <div id="cevap4" class="accordion-collapse collapse" aria-labelledby="soru4" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        Siparişiniz onaylandıktan sonra 1-3 iş günü içerisinde kargoya verilir. Kargo takip numarası sistemden görüntülenebilir.
+                    </div>
+                </div>
+            </div>
+
+            <!-- S5 -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru5">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap5" aria-expanded="false" aria-controls="cevap5">
+                        Aynı e-posta ile ikinci kez kayıt olabilir miyim?
+                    </button>
+                </h2>
+                <div id="cevap5" class="accordion-collapse collapse" aria-labelledby="soru5" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        Hayır. Her kullanıcı e-posta ve telefon numarası ile yalnızca bir hesap oluşturabilir.
+                    </div>
+                </div>
+            </div>
+
+            <!-- S6 -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru6a">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap6a" aria-expanded="false" aria-controls="cevap6a">
+                        Kazancımı ne zaman çekebilirim?
+                    </button>
+                </h2>
+                <div id="cevap6a" class="accordion-collapse collapse" aria-labelledby="soru6a" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        Eğer
+                        4.000 ₺
+                        eşiği geçmişseniz ve iade süresi olan 14 günü geçmişse verilen para çekme talepleri her ayın
+                        "1'inde"
+                        Ödenmektedir.
+                    </div>
+                </div>
+            </div>
+
+            <!-- S7 -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru6b">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap6b" aria-expanded="false" aria-controls="cevap6b">
+                        Hesap ismiyle IBAN sahibi farklı olursa para çekebilir miyim?
+                    </button>
+                </h2>
+                <div id="cevap6b" class="accordion-collapse collapse" aria-labelledby="soru6b" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        Hayır. IBAN'daki ad-soyad ile hesap sahibinin ad-soyadı birebir aynı olmalıdır.
+                    </div>
+                </div>
+            </div>
+
+            <!-- YENİ: Kimler alışveriş yapabilir -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru7">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap7" aria-expanded="false" aria-controls="cevap7">
+                        Kimler alışveriş yapabilir?
+                    </button>
+                </h2>
+                <div id="cevap7" class="accordion-collapse collapse" aria-labelledby="soru7" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        Sisteme giriş yapmış müşteriler alışveriş yapabilir.
+                    </div>
+                </div>
+            </div>
+
+            <!-- YENİ: Adres zorunluluğu -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru8">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap8" aria-expanded="false" aria-controls="cevap8">
+                        Sipariş verebilmek için adres girmek zorunlu mu?
+                    </button>
+                </h2>
+                <div id="cevap8" class="accordion-collapse collapse" aria-labelledby="soru8" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        Evet. Sepeti onaylamadan veya “Hemen Al” işlemi yapmadan önce hesabınıza en az bir adres eklemiş olmalısınız.
+                    </div>
+                </div>
+            </div>
+
+            <!-- YENİ: Ürünün satın alınamadığı durumlar -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru9">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap9" aria-expanded="false" aria-controls="cevap9">
+                        Hangi durumlarda bir ürünü satın alamam?
+                    </button>
+                </h2>
+                <div id="cevap9" class="accordion-collapse collapse" aria-labelledby="soru9" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        Ürünün mağazası pasifse, ürün yayında değilse, stok yetersizse veya zorunlu seçenekler (renk/beden vb.) seçilmemişse satın alma yapılamaz.
+                    </div>
+                </div>
+            </div>
+
+            <!-- YENİ: Sepette aynı ürün davranışı -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru10">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap10" aria-expanded="false" aria-controls="cevap10">
+                        Sepete aynı ürünü eklersem ne olur?
+                    </button>
+                </h2>
+                <div id="cevap10" class="accordion-collapse collapse" aria-labelledby="soru10" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        Aynı varyasyonları (renk/beden vb.) seçtiyseniz miktar artırılır; farklı varyasyon seçtiyseniz yeni satır olarak eklenir.
+                    </div>
+                </div>
+            </div>
+
+            <!-- YENİ: Stok ve sipariş -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru11">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap11" aria-expanded="false" aria-controls="cevap11">
+                        Sipariş verince stoktan düşer mi?
+                    </button>
+                </h2>
+                <div id="cevap11" class="accordion-collapse collapse" aria-labelledby="soru11" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        Evet. Sipariş oluşturulduğunda ürün stoğu otomatik olarak düşer.
+                    </div>
+                </div>
+            </div>
+
+            <!-- YENİ: Bonus geçmişi ve bakiye -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru12">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap12" aria-expanded="false" aria-controls="cevap12">
+                        Bonus geçmişimi ve güncel bakiyemi nereden görebilirim?
+                    </button>
+                </h2>
+                <div id="cevap12" class="accordion-collapse collapse" aria-labelledby="soru12" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        “Bonus Geçmişi” sayfasında tüm bonus hareketlerinizi, onaylanan çekimlerinizin toplamını ve güncel bakiyenizi görüntüleyebilirsiniz.
+                    </div>
+                </div>
+            </div>
+
+            <!-- YENİ: Hemen Al için adres ve roller -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="soru14">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cevap14" aria-expanded="false" aria-controls="cevap14">
+                        “Hemen Al” kullanırken nelere dikkat etmeliyim?
+                    </button>
+                </h2>
+                <div id="cevap14" class="accordion-collapse collapse" aria-labelledby="soru14" data-bs-parent="#sssAccordion">
+                    <div class="accordion-body">
+                        Hesabınızda adres tanımlı olmalı; ürünün mağazası aktif ve ürün yayında olmalı;
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>

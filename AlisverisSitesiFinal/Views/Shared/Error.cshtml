@@ -1,0 +1,97 @@
+﻿@model ErrorViewModel
+@{
+    ViewData["Title"] = "Hata";
+    bool isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+}
+
+<style>
+    .error-page {
+        background-color: #f9fafb;
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px 15px;
+    }
+
+    .error-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+        padding: 50px 30px;
+        max-width: 600px;
+    }
+
+    .error-icon {
+        font-size: 4rem;
+        color: #10b981; /* Maraline yeşili */
+        margin-bottom: 20px;
+    }
+
+    .error-title {
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .error-text {
+        color: #6b7280;
+        margin-top: 10px;
+        font-size: 1.05rem;
+    }
+
+    .btn-maraline {
+        background-color: #10b981;
+        border: none;
+        color: #fff;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        margin-top: 25px;
+        transition: 0.2s;
+    }
+
+        .btn-maraline:hover {
+            background-color: #0d9465;
+        }
+
+    .debug-info {
+        background: #fff3cd;
+        color: #856404;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 30px;
+        font-size: 0.9rem;
+        text-align: left;
+    }
+</style>
+
+<div class="error-page">
+    <div class="error-card">
+        <i class="bi bi-emoji-frown-fill error-icon"></i>
+        <h1 class="error-title">Bir şeyler ters gitti</h1>
+        <p class="error-text">
+            Üzgünüz! Şu anda isteğiniz işlenemedi.
+            Ekiplerimiz sorunu çözmek için çalışıyor. Lütfen kısa süre sonra tekrar deneyin.
+        </p>
+
+        <a href="/" class="btn btn-maraline">
+            <i class="bi bi-arrow-left-circle me-1"></i> Ana Sayfaya Dön
+        </a>
+
+        @if (isDevelopment)
+        {
+            <div class="debug-info mt-4">
+                <h6 class="fw-bold mb-2">Geliştirici Bilgileri</h6>
+                @if (Model.ShowRequestId)
+                {
+                    <p><strong>Talep ID:</strong> <code>@Model.RequestId</code></p>
+                }
+                <p>
+                    <strong>Not:</strong> Bu bilgiler yalnızca geliştirme modunda görünür.
+                    <br />Canlı ortamda kullanıcılar bu detayları göremez.
+                </p>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,71 @@
+﻿@model AlisverisSitesiFinal.Models.Adres
+@{
+    ViewData["Title"] = "Adresi Düzenle";
+    // AdreslerController/Edit GET içinde ViewBag.ReturnUrl set ediyorsun; yoksa boş kalsın
+    var returnUrl = ViewBag.ReturnUrl as string ?? "";
+}
+
+<div class="container my-4">
+    <h2 class="mb-3">Adresi Düzenle</h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    <!-- id’yi route ile gönderiyoruz -->
+    <form asp-controller="Adresler" asp-action="Edit" asp-route-id="@Model.Id" method="post" class="needs-validation" novalidate>
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+        <div class="mb-3">
+            <label asp-for="AdresBasligi" class="form-label"></label>
+            <input asp-for="AdresBasligi" class="form-control" />
+            <span asp-validation-for="AdresBasligi" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="AdresDetayi" class="form-label"></label>
+            <textarea asp-for="AdresDetayi" class="form-control" rows="3"></textarea>
+            <span asp-validation-for="AdresDetayi" class="text-danger"></span>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Il" class="form-label"></label>
+                <input asp-for="Il" class="form-control" />
+                <span asp-validation-for="Il" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Ilce" class="form-label"></label>
+                <input asp-for="Ilce" class="form-control" />
+                <span asp-validation-for="Ilce" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="PostaKodu" class="form-label"></label>
+                <input asp-for="PostaKodu" class="form-control" />
+                <span asp-validation-for="PostaKodu" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="mb-3 mt-3">
+            <label asp-for="Telefon" class="form-label"></label>
+            <input asp-for="Telefon" class="form-control" />
+            <small class="text-muted">Opsiyonel</small>
+            <span asp-validation-for="Telefon" class="text-danger"></span>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+            <a asp-action="Index" asp-controller="Adresler" class="btn btn-outline-secondary">İptal</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

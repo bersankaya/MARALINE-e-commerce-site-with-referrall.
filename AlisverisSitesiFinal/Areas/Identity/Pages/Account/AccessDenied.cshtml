@@ -1,0 +1,68 @@
+﻿@page
+@model AccessDeniedModel
+@{
+    ViewData["Title"] = "Erişim Engellendi";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+
+            <div class="card border-0 shadow-sm" style="border-radius:1rem;">
+                <div class="card-body p-4 p-md-5">
+
+                    <!-- Başlık -->
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width:56px;height:56px;background:#fde2e1;">
+                            <!-- kilit/403 simgesi -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="#dc3545" viewBox="0 0 16 16" aria-hidden="true">
+                                <path d="M8 1a3 3 0 0 0-3 3v2H4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm2 5H6V4a2 2 0 1 1 4 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="h4 mb-0">@ViewData["Title"]</h1>
+                            <div class="text-muted small">403 • Bu kaynağa erişim yetkiniz bulunmuyor</div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
+                        <span class="mt-1" aria-hidden="true">⛔</span>
+                        <div>
+                            <p class="mb-1"><strong>Bu kaynağa erişiminiz yok.</strong></p>
+                            <p class="mb-0">Yetki gerektiren bir sayfaya ulaşmaya çalıştınız veya oturumunuzun izinleri bu işlem için yeterli değil.</p>
+                        </div>
+                    </div>
+
+                    <!-- İpuçları -->
+                    <ul class="text-muted small mb-4 ps-3">
+                        <li>Doğru hesapla giriş yaptığınızdan emin olun.</li>
+                        <li>Gerekli role/satıcılık/abonelik izni yoksa yönetici onayı gerekebilir.</li>
+                        <li>Bu hatanın yanlış olduğunu düşünüyorsanız lütfen destekle iletişime geçin.</li>
+                    </ul>
+
+                    <!-- Aksiyonlar -->
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                            Geri Dön
+                        </button>
+                        <a asp-page="/Index" class="btn btn-primary">
+                            Anasayfaya Git
+                        </a>
+                       @*  <a asp-area="" asp-controller="Account" asp-action="Login" class="btn btn-light border">
+                            Giriş Yap
+                        </a> *@
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="text-muted small">
+                        İstek Kimliği: <code>@HttpContext.TraceIdentifier</code>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

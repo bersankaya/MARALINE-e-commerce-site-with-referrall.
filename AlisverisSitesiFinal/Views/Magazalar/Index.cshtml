@@ -1,0 +1,43 @@
+﻿@model List<AlisverisSitesiFinal.Models.Magaza>
+@{
+    ViewData["Title"] = "Mağazalar";
+}
+<div class="container py-4">
+    <h2 class="mb-3">Mağazalar</h2>
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">Henüz mağaza yok.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mağaza</th>
+                        <th>Sahip</th>
+                        <th>IBAN</th>
+                        <th>Vergi No</th>
+                        <th>Aktif</th>
+                        <th class="text-end">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model)
+                    {
+                        <tr>
+                            <td>@m.Ad</td>
+                            <td>@(m.Sahip != null ? (m.Sahip.Ad + " " + m.Sahip.Soyad) : "-")</td>
+                            <td>@(string.IsNullOrWhiteSpace(m.IBAN) ? "-" : m.IBAN)</td>
+                            <td>@(string.IsNullOrWhiteSpace(m.VergiNo) ? "-" : m.VergiNo)</td>
+                            <td>@(m.AktifMi ? "Evet" : "Hayır")</td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-sm btn-primary">Detay</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

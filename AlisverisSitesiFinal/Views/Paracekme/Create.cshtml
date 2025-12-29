@@ -1,0 +1,176 @@
+﻿@model AlisverisSitesiFinal.Models.ParaCekmeTalebi
+@{
+    ViewData["Title"] = "Yeni Para Çekme Talebi";
+
+    var adSoyad   = (string?)ViewData["AdSoyad"] ?? "";
+    var iban      = (string?)ViewData["IBAN"] ?? "";
+    var bankaAd   = (string?)ViewData["BankaAd"] ?? "Bilinmeyen Banka";
+    var bankaLogo = (string?)ViewData["BankaLogo"] ?? "/images/banks/generic-bank.svg";
+
+    // Mevcut yapın
+    var canWithdraw = (bool?)ViewData["CanWithdraw"] ?? false;
+    var balance     = (decimal?)ViewData["Balance"] ?? 0m;
+
+    // Yeni (opsiyonel) bekçi verileri — gelmezse güvenli varsayılanlar
+    var has14Lock       = (bool?)ViewData["Has14DayLock"] ?? false;  // 14 günlük kesinleşme süreci kilidi
+    var netForThreshold = (decimal?)ViewData["NetForThreshold"] ?? 0m; // eşiğe esas net harcama (aktif iade hariç)
+    var esik            = (decimal?)ViewData["Eşik"] ?? 4000m;       // eşik (varsayılan 4000)
+
+    // Buton/input pasif mi?
+    bool disabled = !canWithdraw || has14Lock || netForThreshold < esik || balance <= 0;
+
+    // Neden pasif? (UI mesajları için)
+    var disabledReasons = new List<string>();
+    if (!canWithdraw) disabledReasons.Add("Kazancınız yokken talep oluşturamazsınız.");
+    if (has14Lock) disabledReasons.Add("14 günlük kesinleşme süreci bitmeden para çekemezsiniz.");
+    if (netForThreshold < esik) disabledReasons.Add($"Net harcama eşiği {esik:N0} ₺ sağlanmadan para çekemezsiniz (aktif iade sürecindeki siparişler hesaba dahil edilmez).");
+    if (balance <= 0) disabledReasons.Add("Çekilebilir bakiyeniz bulunmuyor.");
+}
+
+<!-- Ödeme Uyarı Banner(ları) -->
+<div class="odeme-banner" role="note" aria-label="Ödeme Bilgilendirme">
+    <i class="bi bi-info-circle-fill"></i>
+    <div class="odeme-banner-body">
+        <p>
+            Eğer <b>@esik.ToString("N0") ₺</b> eşiği geçmişseniz ve iade süresi olan 14 gün de dolmuşsa,
+            onaylanan para çekme talepleri her ayın <strong>1’inde</strong> ödenir.
+        </p>
+    </div>
+</div>
+
+<div class="odeme-banner odeme-banner--warn" role="note" aria-label="Uyarı">
+    <i class="bi bi-exclamation-circle-fill"></i>
+    <div class="odeme-banner-body">
+        <p>Şartlar sağlanmamışsa para çekme talepleri reddedilir.</p>
+    </div>
+</div>
+<style>
+    .odeme-banner {
+        background: linear-gradient(90deg, #cceeff, #b3e6ff);
+        color: #004d66;
+        font-size: 1.1rem;
+        font-weight: 500;
+        padding: 12px 20px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .odeme-banner i { font-size: 1.4rem; color: #0077b3; }
+    .odeme-banner strong { font-weight: 700; margin: 0 4px; }
+</style>
+
+<h2 class="mb-4 fw-bold text-primary text-center">@ViewData["Title"]</h2>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger shadow-sm">@TempData["Error"]</div>
+            }
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success shadow-sm">@TempData["Success"]</div>
+            }
+
+            <form asp-action="Create" method="post" class="card p-4 shadow-lg border-0 rounded-4">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <!-- Toplam Kazanç kartı -->
+                <div class="mb-3 p-3 border rounded-3 bg-light">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="fw-semibold">Bakiyeniz</span>
+                        <span class="fw-bold">@balance.ToString("N2") TL</span>
+                    </div>
+                </div>
+
+                <!-- Bekçi kuralları bilgilendirme -->
+                <div class="alert @(disabled ? "alert-warning" : "alert-success") mb-3">
+                    <div class="fw-semibold mb-1">Çekim koşulları</div>
+                    <ul class="mb-0 small">
+                        <li> Yeni Üye olmuşsanız Son <b>14 gün</b> içinde 4000 bin tllik eşik için iade talebleriniz aktifse <b>çekim yapılamaz eğer iade talebi oluşturmuşsanız ve onaylanmışsa lütfen tekrardan 4000 tl eşiği geçiniz</b>.</li>
+
+                        <li><b>Eşiğe esas net harcama</b> en az <b>@esik.ToString("N0") ₺</b> olmalı
+                            <span class="text-muted">(aktif iade sürecindeki siparişler bu hesaba dahil edilmez)</span>.
+                            <br />İade ve Reddedilen hariç toplam harcama: <b>@netForThreshold.ToString("N2") ₺</b>
+                        </li>
+                        <li>Çekmek istediğiniz tutar mevcut bakiyeden küçük/eşit olmalı.</li>
+                    </ul>
+
+                    @if (disabledReasons.Any())
+                    {
+                        <hr class="my-2" />
+                        <div class="small">
+                            @foreach (var r in disabledReasons)
+                            {
+                                <div>• @r</div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Ad Soyad</label>
+                    <input class="form-control form-control-lg rounded-3 shadow-sm" value="@adSoyad" readonly />
+                </div>
+
+                <div class="mb-1">
+                    <label class="form-label fw-semibold">IBAN</label>
+                    <input class="form-control form-control-lg rounded-3 shadow-sm" value="@iban" readonly />
+                </div>
+
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <img src="@bankaLogo" alt="Banka" style="width:26px;height:26px;object-fit:contain;" />
+                    <span class="badge rounded-pill text-bg-light border px-3 py-2 shadow-sm">@bankaAd</span>
+                    <small class="text-muted ms-auto">
+                        IBAN'ı değiştirmek için <a asp-action="IBANGuncelle" class="link-primary fw-semibold">IBAN Güncelle</a>.
+                    </small>
+                </div>
+
+                <div class="mb-3">
+                    @if (disabled)
+                    {
+                        <input asp-for="Tutar" class="form-control ..." placeholder="Tutar giriniz" disabled />
+                        <button type="button" class="btn btn-primary ..." disabled>💰 Talep Oluştur</button>
+                    }
+                    else
+                    {
+                        <input asp-for="Tutar" class="form-control ..." placeholder="Tutar giriniz" />
+                        <button type="submit" class="btn btn-primary ...">💰 Talep Oluştur</button>
+                    }
+
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    @if (!disabled)
+                    {
+                        <button type="submit" class="btn btn-primary btn-lg px-4 shadow-sm">
+                            💰 Talep Oluştur
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                class="btn btn-primary btn-lg px-4 shadow-sm"
+                                disabled
+                                title="Koşullar sağlanmadan talep oluşturamazsınız">
+                            💰 Talep Oluştur
+                        </button>
+                    }
+                    <a asp-action="KullanicininTalepleri" class="btn btn-outline-secondary btn-lg px-4 shadow-sm">
+                        📄 Taleplerim
+                    </a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

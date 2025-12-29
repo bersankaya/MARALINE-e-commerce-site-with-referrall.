@@ -1,0 +1,46 @@
+﻿@model AlisverisSitesiFinal.Models.Urun
+@{
+    ViewData["Title"] = Model.Ad;
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2 shadow-sm p-4 rounded bg-white">
+            <h2 class="text-primary fw-bold mb-4">@Model.Ad</h2>
+
+            <dl class="row">
+                <dt class="col-sm-3">Fiyat:</dt>
+                <dd class="col-sm-9 text-success fs-5 fw-semibold">@Model.Fiyat.ToString("C")</dd>
+
+                <dt class="col-sm-3">Stok:</dt>
+                <dd class="col-sm-9">
+                    @if (Model.StokAdedi > 0)
+                    {
+                        <span class="badge bg-success">@Model.StokAdedi adet mevcut</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Stokta yok</span>
+                    }
+                </dd>
+
+                <dt class="col-sm-3">Açıklama:</dt>
+                <dd class="col-sm-9">@Model.Aciklama</dd>
+            </dl>
+
+            <div class="mt-4">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-secondary fw-bold">🔙 Ürünlere Geri Dön</a>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success mt-4">@TempData["SuccessMessage"]</div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger mt-4">@TempData["ErrorMessage"]</div>
+            }
+        </div>
+    </div>
+</div>

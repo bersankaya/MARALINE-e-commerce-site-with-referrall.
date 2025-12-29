@@ -1,0 +1,114 @@
+﻿@model List<AlisverisSitesiFinal.Models.Urun>
+
+@{
+    var kartStili = ViewData.ContainsKey("ViewKartStili") ? ViewData["ViewKartStili"]?.ToString() : "";
+    var avantajliMi = kartStili == "avantajli";
+
+    // Maks gösterim adedi (default 8) – ihtiyaca göre ViewData ile override edilebilir
+    int maxCount = 8;
+    if (ViewData.ContainsKey("MaxCount") && int.TryParse(ViewData["MaxCount"]?.ToString(), out var vdCount) && vdCount > 0)
+    {
+        maxCount = vdCount;
+    }
+
+    // --- Ürünleri her istek için karıştır ---
+    var rnd = new Random(Guid.NewGuid().GetHashCode());
+    var urunler = (Model ?? new List<AlisverisSitesiFinal.Models.Urun>())
+                    .OrderBy(_ => rnd.Next())
+                    .Take(maxCount)
+                    .ToList();
+
+    // Kart tipi sınıf eşlemesi
+    string KartTipiClass(string tip) => tip switch
+    {
+        "populer" => "populer-kart",
+        "avantajli" => "avantajli-kart",
+        "coksatan" => "coksatan-kart",
+        _ => "urun-karti-standart"
+    };
+}
+
+@if (avantajliMi)
+{
+    <div class="avantajli-urunler-wrapper text-white p-4 rounded-4 shadow-sm mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+        </div>
+
+        <div class="urun-listesi limit-8 scroll-fade scroll-hint" style="display:flex; overflow-x:auto; gap:1rem; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;">
+            @foreach (var urun in urunler)
+            {
+                <div class="urun-karti @KartTipiClass(kartStili!) sabit-kart" style="flex:0 0 auto; scroll-snap-align:start;">
+                    @await Html.PartialAsync("_UrunKarti", urun, new ViewDataDictionary(ViewData)
+                    {
+                        { "KartStili", kartStili }
+                    })
+        </div>
+                }
+        </div>
+    </div>
+}
+else
+{
+    <div class="urun-listesi limit-8 mb-4 scroll-fade scroll-hint" style="display:flex; overflow-x:auto; gap:1rem; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;">
+        @foreach (var urun in urunler)
+        {
+            <div class="urun-karti @KartTipiClass(kartStili!) sabit-kart" style="flex:0 0 auto; scroll-snap-align:start;">
+                @await Html.PartialAsync("_UrunKarti", urun, new ViewDataDictionary(ViewData)
+                {
+                    { "KartStili", kartStili }
+                })
+    </div>
+        }
+    </div>
+}
+
+<style>
+    /* Fiyatları farklı göstermek için örnek */
+    .urun-karti .fiyat {
+        font-weight: bold;
+        color: #ff4d4f; /* kırmızı ton */
+        font-size: 1.1rem;
+    }
+
+    .urun-listesi::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .urun-listesi::-webkit-scrollbar-thumb {
+        background-color: rgba(0,0,0,0.2);
+        border-radius: 4px;
+    }
+
+    .urun-listesi::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    /* iPhone ve Android uyumlu yatay kaydırma */
+    .urun-listesi {
+        -ms-overflow-style: none; /* IE ve Edge */
+        scrollbar-width: thin; /* Firefox */
+    }
+
+        .urun-listesi::-webkit-scrollbar {
+            display: none; /* Safari ve Chrome gizle */
+        }
+
+    /* --- Sabit genişlik ve yükseklik --- */
+    .sabit-kart {
+        width: 220px; /* kart genişliği */
+        height: 350px; /* kart yüksekliği */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow: hidden; /* içerik taşarsa gizle */
+        border-radius: 12px;
+        background-color: #fff; /* kart arka plan */
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+        /* İçerik taşarsa kaydırılabilir */
+        .sabit-kart .kart-icerik {
+            overflow-y: auto;
+        }
+</style>

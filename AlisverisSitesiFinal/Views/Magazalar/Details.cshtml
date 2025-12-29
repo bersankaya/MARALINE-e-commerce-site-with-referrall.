@@ -1,0 +1,119 @@
+﻿@model AlisverisSitesiFinal.Models.Magaza
+@{
+    ViewData["Title"] = "Mağaza Detayı";
+}
+
+
+<div class="container py-4">
+    <h2 class="mb-3">@Model.Ad</h2>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div><strong>Sahip:</strong> @(Model.Sahip != null ? (Model.Sahip.Ad + " " + Model.Sahip.Soyad) : "-")</div>
+                    <div><strong>IBAN:</strong> @(string.IsNullOrWhiteSpace(Model.IBAN) ? "-" : Model.IBAN)</div>
+                    <div><strong>Vergi No:</strong> @(string.IsNullOrWhiteSpace(Model.VergiNo) ? "-" : Model.VergiNo)</div>
+                    <div><strong>Aktif:</strong> @(Model.AktifMi ? "Evet" : "Hayır")</div>
+                    <div><strong>Oluşturma:</strong> @Model.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm")</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div><strong>Toplam Ürün:</strong> @((int?)ViewBag.ToplamUrun ?? 0)</div>
+                    <div><strong>Yayındaki Ürün:</strong> @((int?)ViewBag.YayindakiUrun ?? 0)</div>
+                    <div><strong>Son Ürün Tarihi:</strong> @(ViewBag.EnSonUrunTarihi == null ? "-" : ((DateTime)ViewBag.EnSonUrunTarihi).ToString("dd.MM.yyyy HH:mm"))</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div><strong>Sahip:</strong> @(Model.Sahip != null ? (Model.Sahip.Ad + " " + Model.Sahip.Soyad) : "-")</div>
+                    <div><strong>IBAN:</strong> @(string.IsNullOrWhiteSpace(Model.IBAN) ? "-" : Model.IBAN)</div>
+                    <div><strong>Vergi No:</strong> @(string.IsNullOrWhiteSpace(Model.VergiNo) ? "-" : Model.VergiNo)</div>
+                    <div><strong>Aktif:</strong> @(Model.AktifMi ? "Evet" : "Hayır")</div>
+                    <div><strong>Oluşturma:</strong> @Model.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm")</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div><strong>Toplam Ürün:</strong> @((int?)ViewBag.ToplamUrun ?? 0)</div>
+                    <div><strong>Yayındaki Ürün:</strong> @((int?)ViewBag.YayindakiUrun ?? 0)</div>
+                    <div><strong>Son Ürün Tarihi:</strong> @(ViewBag.EnSonUrunTarihi == null ? "-" : ((DateTime)ViewBag.EnSonUrunTarihi).ToString("dd.MM.yyyy HH:mm"))</div>
+                    <hr />
+                    <div class="fs-5">
+                        <strong>Satıcıya Ödenecek Toplam:</strong>
+                        @(((decimal?)ViewBag.ToplamSaticiyaOdenecek ?? 0m).ToString("C"))
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <h5 class="mb-2">Mağaza Ürünleri</h5>
+    @if (Model.Urunler == null || !Model.Urunler.Any())
+    {
+        <div class="alert alert-info">Bu mağazaya bağlı ürün yok.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Görsel</th>
+                        <th>Ad</th>
+                        <th>Satıcı Teklifi</th>   <!-- EKLENDİ -->
+                        <th>Fiyat</th>
+                        <th>Stok</th>
+                        <th>Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model.Urunler.OrderByDescending(x => x.EklenmeTarihi))
+                    {
+                        <tr>
+                            <td style="width:90px">
+                                <img src="@(string.IsNullOrWhiteSpace(u.ResimUrl) ? Url.Content("~/images/placeholders/no-image.png") : u.ResimUrl)"
+                                     alt="@u.Ad" class="img-fluid" style="max-height:70px;object-fit:contain;" />
+                            </td>
+                            <td>@u.Ad</td>
+                            <td>@(u.SaticiTeklifFiyati.HasValue? u.SaticiTeklifFiyati.Value.ToString("C") : "-")</td> <!-- EKLENDİ -->
+                            <td>@u.Fiyat.ToString("C")</td>
+                            <td>@u.StokAdedi</td>
+                            <td>
+                                @if (u.YayindaMi)
+                                {
+                                    <span class="badge bg-success">Yayında</span>
+                                }
+                                else if (u.Durum == AlisverisSitesiFinal.Models.UrunDurum.AdminFiyatBekliyor)
+                                {
+
+                                    <span class="badge bg-warning text-dark">Fiyat Bekliyor</span>
+                                }
+                                else if (u.Durum == AlisverisSitesiFinal.Models.UrunDurum.Reddedildi)
+                                {
+
+                                    <span class="badge bg-danger">Reddedildi</span>
+                                }
+                                else
+                                {
+
+                                    <span class="badge bg-secondary">Taslak</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+        </div>
+    }
+</div>

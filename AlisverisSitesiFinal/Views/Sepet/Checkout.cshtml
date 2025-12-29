@@ -1,0 +1,43 @@
+﻿@{
+    ViewData["Title"] = "Adres Seçimi";
+    var adresler = ViewBag.Adresler as List<AlisverisSitesiFinal.Models.Adres>;
+}
+
+<div class="container my-4">
+    <h2>Adres Seçimi</h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    @if (adresler == null || !adresler.Any())
+    {
+        <div class="alert alert-info">
+            Kayıtlı adresiniz yok. <a asp-controller="Adresler" asp-action="Create" asp-route-returnUrl="@(Url.Action("Checkout", "Sepet"))">Adres ekleyin</a>.
+        </div>
+    }
+    else
+    {
+        <form asp-action="Checkout" method="post" class="mt-3">
+            <div class="mb-3">
+                <label class="form-label">Teslimat Adresi</label>
+                <select name="adresId" class="form-select" required>
+                    @foreach (var a in adresler)
+                    {
+                        <option value="@a.Id" selected="@(a.IsVarsayilan ? "selected" : null)">
+                            @a.AdresBasligi - @a.Ilce/@a.Il
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a asp-controller="Adresler" asp-action="Create" asp-route-returnUrl="@(Url.Action("Checkout", "Sepet"))" class="btn btn-outline-secondary">
+                    Yeni Adres Ekle
+                </a>
+                <button type="submit" class="btn btn-primary">Devam Et ve Öde</button>
+            </div>
+        </form>
+    }
+</div>

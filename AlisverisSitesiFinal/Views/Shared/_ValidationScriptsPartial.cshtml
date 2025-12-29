@@ -1,0 +1,91 @@
+﻿@* Views/Shared/_ValidationScriptsPartial.cshtml *@
+
+<environment include="Development">
+    <!-- Geliştirme: Yerel (non-min) dosyalar -->
+    <script src="~/lib/jquery/dist/jquery.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.js"></script>
+    <!-- Türkçe mesajlar (yerel) -->
+    <script src="~/lib/jquery-validation/dist/localization/messages_tr.js"></script>
+</environment>
+
+<environment exclude="Development">
+    <!-- Üretim: Min dosyalar + CDN yedeği -->
+    <!-- jQuery -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script>
+        if (typeof window.jQuery === 'undefined') {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"><\/script>');
+        }
+    </script>
+
+    <!-- jQuery Validate -->
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script>
+        if (typeof window.jQuery === 'undefined' || typeof jQuery.validator === 'undefined') {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"><\/script>');
+        }
+    </script>
+
+    <!-- Unobtrusive -->
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        if (!jQuery.validator || !jQuery.validator.unobtrusive) {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive@3.2.12/dist/jquery.validate.unobtrusive.min.js"><\/script>');
+        }
+    </script>
+
+    <!-- Türkçe mesajlar -->
+    <script src="~/lib/jquery-validation/dist/localization/messages_tr.min.js"></script>
+    <script>
+        // CDN yedeği (yerel dosya yoksa)
+        (function () {
+            var ok = !!(window.jQuery && jQuery.validator && jQuery.validator.messages && jQuery.validator.messages.required);
+            if (!ok) {
+                document.write('<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/localization/messages_tr.min.js"><\/script>');
+            }
+        })();
+    </script>
+</environment>
+
+<script>
+    (function () {
+        // 1) jQuery Validate TR mesajlarını garantiye al (messages_tr yüklense de pekiştiriyoruz)
+        if (window.jQuery && $.validator) {
+            $.extend($.validator.messages, {
+                required: "Bu alan zorunludur.",
+                email: "Geçerli bir e-posta adresi giriniz.",
+                number: "Lütfen geçerli bir sayı giriniz.",
+                digits: "Lütfen yalnızca rakam giriniz.",
+                equalTo: "Aynı değeri tekrar giriniz.",
+                maxlength: $.validator.format("En fazla {0} karakter giriniz."),
+                minlength: $.validator.format("En az {0} karakter giriniz."),
+                rangelength: $.validator.format("Lütfen {0} ile {1} karakter arasında değer giriniz."),
+                range: $.validator.format("Lütfen {0} ile {1} arasında bir değer giriniz."),
+                max: $.validator.format("Lütfen {0} veya daha küçük bir değer giriniz."),
+                min: $.validator.format("Lütfen {0} veya daha büyük bir değer giriniz.")
+            });
+        }
+
+        // 2) MVC'nin HTML'e yazdığı İngilizce 'The ... field is required.' metinlerini temizle
+        //    (boş bırakırsak jQuery Validate kendi TR mesajını kullanır)
+        var isEnReq = function (s) { return !!s && (/^The .+ field is required\.?$/i).test(s); };
+
+        document.querySelectorAll('[data-val="true"][data-val-required]').forEach(function (el) {
+            var msg = el.getAttribute('data-val-required');
+            if (isEnReq(msg)) {
+                el.setAttribute('data-val-required', ''); // boşalt → TR default devreye girer
+            }
+        });
+
+        // 3) Formları yeniden parse et (temizliğin etkisi için)
+        if (window.jQuery && $.validator && $.validator.unobtrusive) {
+            var $forms = $('form');
+            $forms.removeData('validator').removeData('unobtrusiveValidation');
+            $.validator.unobtrusive.parse($forms);
+        }
+
+        // (İsteğe bağlı) ondalık ayırıcı kültür ayarı gerekiyorsa burada handle edilebilir:
+        // Örn: virgül/nokta uyumsuzluğu için pattern ayarlaması vb.
+    })();
+</script>

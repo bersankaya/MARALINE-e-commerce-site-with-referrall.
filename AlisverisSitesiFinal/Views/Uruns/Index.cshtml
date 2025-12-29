@@ -1,0 +1,595 @@
+@model AlisverisSitesiFinal.Models.UrunListViewModel
+@using Microsoft.AspNetCore.Identity
+@using AlisverisSitesiFinal.Models
+@inject SignInManager<Kullanici> SignInManager
+@inject UserManager<Kullanici> UserManager
+
+
+@{
+    ViewData["Title"] = "Ürünler";
+
+    var user = await UserManager.GetUserAsync(User);
+    bool isAdmin = user != null && await UserManager.IsInRoleAsync(user, "Admin");
+    bool isSatici = User.IsInRole("Satici");
+    bool canEdit = isAdmin || isSatici;
+
+    string baslik = Model?.Filtre switch
+    {
+        "populer" => "Popüler Ürünler",
+        "avantajli" => "Avantajlı Ürünler",
+        "coksatan" => "Çok Satanlar",
+        "yeni" => "Yeni Gelenler",
+        _ => "Tüm Ürünler"
+    };
+
+    var liste = Model?.TumUrunler ?? new List<Urun>();
+
+    // rng (random tutarlılığı için — JS kullanıyor, sunucuda karıştırma yok)
+    string rng = Context.Request.Query["rng"].ToString();
+    if (string.IsNullOrWhiteSpace(rng))
+    {
+        rng = new Random().Next(100000, 999999).ToString();
+    }
+
+    int page = ViewBag.Page is int ? (int)ViewBag.Page : 1;
+    int pageSize = ViewBag.PageSize is int ? (int)ViewBag.PageSize : 24;
+
+    // ✔ Model.TotalCount'a dokunmuyoruz; yalnızca ViewBag veya liste.Count kullan
+    int totalCount = ViewBag.TotalCount is int vbTotal ? vbTotal : liste.Count;
+
+    int totalPages = ViewBag.TotalPages is int vbPages
+        ? vbPages
+        : Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(1, pageSize)));
+
+    bool hasPrev = page > 1;
+    bool hasNext = page < totalPages;
+
+    // YENİ (null ihtimalini tamamen kaldırır)
+    string? filtre = ViewBag.Filtre as string;
+    int? kategoriId = ViewBag.KategoriId as int?;
+    string? arama = ViewBag.Arama as string;
+
+    // Sunucu sayfalı gönderdi mi? (totalCount > gelen liste sayısı ise evet)
+    bool serverPaged = totalCount > liste.Count;
+
+    // View'de tekrar Skip/Take yapma: sadece sunucu tüm listeyi gönderdiyse uygula
+    var paged = serverPaged
+        ? liste
+        : liste.Skip((Math.Max(1, page) - 1) * Math.Max(1, pageSize))
+               .Take(Math.Max(1, pageSize))
+               .ToList();
+
+    // Query -> inputlara geri bas
+    string qVal = Context.Request.Query["arama"].ToString();
+    string minVal = Context.Request.Query["minPrice"].ToString();
+    string maxVal = Context.Request.Query["maxPrice"].ToString();
+    string onlyStockQ = Context.Request.Query["onlyStock"].ToString();
+    string sortQ = Context.Request.Query["sort"].ToString();
+
+    // ✔ Null-safe checkbox için hazırla
+    bool onlyStockChecked = (onlyStockQ == "1") || string.Equals(onlyStockQ, "true", System.StringComparison.OrdinalIgnoreCase);
+
+    // ---- YENİ EKLEME (yapıyı bozmadan): sort boşsa server-side karıştır ----
+    if (string.IsNullOrWhiteSpace(sortQ) && paged.Count > 1)
+    {
+        var rnd = new Random(Guid.NewGuid().GetHashCode());
+        paged = paged.OrderBy(_ => rnd.Next()).ToList();
+    }
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+    </div>
+}
+
+<!-- BAŞLIK -->
+<div id="pageTopMarker" class="d-flex align-items-center justify-content-between mb-3" style="margin-top:var(--page-offset,0px)">
+    <h1 class="h4 m-0">@baslik</h1>
+    <div id="totalCountText" class="text-muted small" data-total="@totalCount">Toplam <strong>@totalCount</strong> ürün</div>
+</div>
+
+<!-- FİLTRE BAR -->
+<div class="mb-3">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="small text-muted">Filtreler</span>
+        <button id="toggleFilterBtn" class="btn btn-outline-secondary btn-sm" type="button"
+                data-bs-toggle="collapse" data-bs-target="#filterCollapse"
+                aria-controls="filterCollapse" aria-expanded="false">
+            <i class="bi bi-funnel"></i> Göster/Gizle
+        </button>
+    </div>
+
+    <div id="filterCollapse" class="collapse">
+        <div class="card shadow-sm border-0">
+            <div class="card-body py-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-lg-4">
+                        <div class="input-group">
+                            <input id="q" class="form-control" placeholder="Ürün ara…" value="@qVal" />
+                            <button class="btn btn-outline-success" type="button" onclick="filterApply()">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="chip">
+                                Min ₺ <input id="minPrice" type="number" step="any" placeholder="0" value="@minVal" />
+                            </span>
+                            <span class="chip">
+                                Max ₺ <input id="maxPrice" type="number" step="any" placeholder="10000" value="@maxVal" />
+                            </span>
+                            <span class="chip">
+                                <input type="checkbox" id="onlyStock" @(onlyStockChecked ? "checked=\"checked\"" : "") />
+                                Stokta
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <div class="d-flex justify-content-lg-end gap-2">
+                            <select id="sort" class="form-select w-auto" onchange="sortApply()">
+                                <option value="">Sırala</option>
+                                <option value="fiyatAsc">Fiyat (Artan)</option>
+                                <option value="fiyatDesc">Fiyat (Azalan)</option>
+                                <option value="yeni">En Yeni</option>
+                                <option value="populer">Popüler</option>
+                            </select>
+                            <button class="btn btn-outline-secondary" type="button" onclick="resetFilters()">Sıfırla</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sekmeler -->
+    <div class="urun-tabs-wrapper mt-2">
+        <ul class="nav nav-tabs urun-tabs flex-nowrap" role="tablist">
+            <li class="nav-item"><a class="nav-link @(string.IsNullOrEmpty(Model?.Filtre) ? "active" : null)" asp-action="Index" asp-route-page="1" asp-route-pageSize="@pageSize" asp-route-rng="@rng">Tüm Ürünler</a></li>
+            <li class="nav-item"><a class="nav-link @(Model?.Filtre == "populer" ? "active" : null)" asp-action="Index" asp-route-filtre="populer" asp-route-page="1" asp-route-pageSize="@pageSize" asp-route-rng="@rng">Popüler</a></li>
+            <li class="nav-item"><a class="nav-link @(Model?.Filtre == "avantajli" ? "active" : null)" asp-action="Index" asp-route-filtre="avantajli" asp-route-page="1" asp-route-pageSize="@pageSize" asp-route-rng="@rng">Avantajlı</a></li>
+            <li class="nav-item"><a class="nav-link @(Model?.Filtre == "coksatan" ? "active" : null)" asp-action="Index" asp-route-filtre="coksatan" asp-route-page="1" asp-route-pageSize="@pageSize" asp-route-rng="@rng">Çok Satanlar</a></li>
+            <li class="nav-item"><a class="nav-link @(Model?.Filtre == "yeni" ? "active" : null)" asp-action="Index" asp-route-filtre="yeni" asp-route-page="1" asp-route-pageSize="@pageSize" asp-route-rng="@rng">Yeni Gelenler</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- ÜRÜN GRID -->
+@if (!paged.Any())
+{
+    <div class="text-center py-5">
+        <div class="display-6 mb-2">😕</div>
+        <p class="lead mb-1">Bu kriterlere uygun ürün bulunamadı.</p>
+        <a asp-action="Index" class="btn btn-success mt-2">Tüm Ürünleri Gör</a>
+    </div>
+}
+else
+{
+    <div id="grid" class="urun-grid">
+        @foreach (var u in paged)
+        {
+            var dateIso = u.EklenmeTarihi.ToString("yyyy-MM-ddTHH:mm:ss");
+            <div class="urun-card js-item"
+                 data-price="@u.Fiyat.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                 data-date="@dateIso"
+                 data-stock="@u.StokAdedi"
+                 data-pop="@(u.IsPopular ? 1 : 0)">
+                <a asp-controller="Uruns" asp-action="Details" asp-route-id="@u.Id" class="d-block">
+                    <img class="urun-img" src="@(!string.IsNullOrWhiteSpace(u.ResimUrl) ? u.ResimUrl : "/images/no-image.png")" alt="@u.Ad" loading="lazy" decoding="async" />
+                </a>
+                <div class="p-3 d-flex flex-column">
+                    <div class="d-flex align-items-center gap-1 mb-2 badge-row">
+                        @if (u.IsPopular)
+                        {
+                            <span class="badge badge-soft rounded-pill">Popüler</span>
+                        }
+                        @if (u.IsAvantajli)
+                        {
+                            <span class="badge badge-soft rounded-pill">Avantajlı</span>
+                        }
+                        @if (u.IsCokSatan)
+                        {
+                            <span class="badge badge-soft rounded-pill">Çok Satan</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(u.Etiket))
+                        {
+                            <span class="badge bg-light text-secondary rounded-pill">@u.Etiket</span>
+                        }
+                    </div>
+                    <a class="text-decoration-none text-dark" asp-controller="Uruns" asp-action="Details" asp-route-id="@u.Id">
+                        <h3 class="urun-title">@u.Ad</h3>
+                    </a>
+                    <div class="d-flex align-items-baseline gap-2 mb-3">
+                        <span class="urun-price">@u.Fiyat.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))</span>
+                    </div>
+                    <div class="mt-auto d-flex gap-2 align-items-stretch urun-btnbar">
+                        @if (canEdit)
+                        {
+                            <a asp-controller="Uruns" asp-action="Edit" asp-route-id="@u.Id"
+                               class="btn btn-outline-secondary btn-sm flex-fill d-flex align-items-center justify-content-center">
+                                <i class="bi bi-pencil-square me-1"></i> Düzenle
+                            </a>
+
+                            @if (isAdmin)
+                            {
+                                <a asp-controller="Uruns" asp-action="Delete" asp-route-id="@u.Id"
+                                   class="btn btn-outline-danger btn-sm flex-fill d-flex align-items-center justify-content-center"
+                                   onclick="return confirm('Emin misiniz?')">
+                                    <i class="bi bi-trash3 me-1"></i> Sil
+                                </a>
+                            }
+                        }
+                        else
+                        {
+                            <form method="get" asp-controller="Uruns" asp-action="Details" class="m-0 flex-fill">
+                                <input type="hidden" name="id" value="@u.Id" />
+                                <button type="submit"
+                                        class="btn btn-outline-success btn-sm w-100 d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-bag-plus me-1"></i> Sepete Ekle
+                                </button>
+                            </form>
+                        }
+                    </div>
+
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Sayfalama -->
+    <div class="text-center mt-4">
+        <nav aria-label="Sayfalama" class="d-inline-block">
+            @if (totalPages > 1)
+            {
+                <ul class="pagination justify-content-center flex-nowrap gap-2 mb-0">
+                    <li class="page-item @(hasPrev ? "" : "disabled")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-page="@(page - 1)" asp-route-pageSize="@pageSize"
+                           asp-route-filtre="@filtre" asp-route-kategoriId="@kategoriId" asp-route-arama="@arama" asp-route-rng="@rng">«</a>
+                    </li>
+                    @for (var i = 1; i <= totalPages; i++)
+                    {
+                        <li class="page-item @(i == page ? "active" : "")">
+                            <a class="page-link" asp-action="Index"
+                               asp-route-page="@i" asp-route-pageSize="@pageSize"
+                               asp-route-filtre="@filtre" asp-route-kategoriId="@kategoriId" asp-route-arama="@arama" asp-route-rng="@rng">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(hasNext ? "" : "disabled")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-page="@(page + 1)" asp-route-pageSize="@pageSize"
+                           asp-route-filtre="@filtre" asp-route-kategoriId="@kategoriId" asp-route-arama="@arama" asp-route-rng="@rng">»</a>
+                    </li>
+                </ul>
+            }
+        </nav>
+    </div>
+}
+
+<button id="toTop" class="btn btn-success rounded-circle shadow"><i class="bi bi-arrow-up"></i></button>
+
+<style>
+    .urun-toolbar .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .35rem .6rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        background: #fff;
+        font-size: .9rem
+    }
+
+    .urun-tabs .nav-link {
+        white-space: nowrap
+    }
+
+    .urun-grid {
+        display: grid;
+        grid-template-columns: repeat(2,minmax(0,1fr));
+        gap: 1rem
+    }
+
+    @@media (min-width:576px) {
+        .urun-grid {
+            grid-template-columns: repeat(3,1fr)
+        }
+    }
+
+    @@media (min-width:992px) {
+        .urun-grid {
+            grid-template-columns: repeat(4,1fr)
+        }
+    }
+
+    @@media (min-width:1200px) {
+        .urun-grid {
+            grid-template-columns: repeat(5,1fr)
+        }
+    }
+
+    .urun-card {
+        border: 1px solid #eee;
+        border-radius: .8rem;
+        overflow: hidden;
+        background: #fff;
+        transition: transform .15s,box-shadow .15s;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+        .urun-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0,0,0,.06)
+        }
+
+    .urun-img {
+        width: 100%;
+        aspect-ratio: 1/1;
+        object-fit: cover;
+        background: #f7f7f7;
+        display: block
+    }
+
+    .badge-soft {
+        background: #eefaf1;
+        color: #198754;
+        border: 1px solid #d9f2e0;
+        font-weight: 500
+    }
+
+    .urun-title {
+        font-size: 1rem;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 2.6em;
+        margin: 0;
+    }
+
+    .badge-row {
+        min-height: 28px;
+    }
+
+    #toTop {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        display: none;
+        width: 42px;
+        height: 42px;
+        align-items: center;
+        justify-content: center
+    }
+
+    /* SADECE MOBİLDE sayfalama sağdan sola ve yatay kaydırma */
+    @@media (max-width: 575.98px) {
+        .pagination {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: .5rem;
+            padding-bottom: .25rem;
+            direction: rtl; /* 1 2 3 4 5 sağdan sola */
+            -webkit-overflow-scrolling: touch;
+        }
+
+            .pagination .page-item {
+                flex: 0 0 auto;
+            }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        /* ---- Sabit 15 kaldırıldı: Dinamik pageSize ---- */
+        function getQS(){ return new URLSearchParams(window.location.search); }
+        function goReplace(qs){ window.location.replace(window.location.pathname + '?' + qs.toString()); }
+        function getDefaultPageSize(){ return parseInt('@pageSize',10) || 24; }
+        function getPageSize(){
+            const qs = getQS();
+            const q = parseInt(qs.get('pageSize') || '0', 10);
+            return (q > 0 ? q : getDefaultPageSize());
+        }
+
+        (function ensureParams(){
+            const qs = getQS();
+            const totalEl = document.getElementById('totalCountText');
+            const total = totalEl ? parseInt(totalEl.dataset.total || '0', 10) : 0;
+            const pageNow = parseInt(qs.get('page') || '1', 10);
+            const PAGE_SIZE = getPageSize();
+            const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+            let changed = false;
+            // pageSize yoksa ekle; varsa ellemiyoruz (gereksiz yönlendirme olmasın)
+            if (!qs.get('pageSize')) { qs.set('pageSize', String(PAGE_SIZE)); changed = true; }
+            if (pageNow > totalPages) { qs.set('page', String(totalPages)); changed = true; }
+            else if (pageNow < 1 || isNaN(pageNow)) { qs.set('page', '1'); changed = true; }
+            if (!qs.get('rng')) { qs.set('rng', '@rng'); changed = true; }
+            if (changed) goReplace(qs);
+        })();
+
+        function setHeaderOffset(){
+            const nb=document.querySelector('.navbar');
+            const marker=document.getElementById('pageTopMarker');
+            if(!nb || !marker){ document.documentElement.style.setProperty('--page-offset','0px'); return; }
+            const pos=getComputedStyle(nb).position;
+            const fixedLike = (pos==='fixed' || pos==='sticky');
+            const nbH = nb.offsetHeight||0;
+            const rect = marker.getBoundingClientRect();
+            const needOffset = fixedLike && rect.top < nbH ? (nbH+8) : 0;
+            document.documentElement.style.setProperty('--page-offset', needOffset+'px');
+        }
+        window.addEventListener('resize', setHeaderOffset);
+        document.addEventListener('DOMContentLoaded', setHeaderOffset);
+
+        document.addEventListener('DOMContentLoaded', function(){
+            var s=document.getElementById('sort'); if(s){ s.value='@sortQ'; }
+            const key='urunFilterOpen', col=document.getElementById('filterCollapse');
+            const saved=localStorage.getItem(key);
+            if(saved==='1'){ col.classList.add('show'); document.getElementById('toggleFilterBtn')?.setAttribute('aria-expanded','true'); }
+            col?.addEventListener('shown.bs.collapse',()=>localStorage.setItem(key,'1'));
+            col?.addEventListener('hidden.bs.collapse',()=>localStorage.setItem(key,'0'));
+        });
+
+        function filterApply(){
+            const baseUrl='@Url.Action("Index", "Uruns")';
+            const params=getQS();
+            const filtre='@(filtre ?? "")';
+            const kategoriId='@(kategoriId?.ToString() ?? "")';
+            const rng=params.get('rng') || '@rng';
+
+            if(filtre) params.set('filtre',filtre); else params.delete('filtre');
+            if(kategoriId) params.set('kategoriId',kategoriId); else params.delete('kategoriId');
+
+            const q=document.getElementById('q')?.value?.trim()||'';
+            const mi=document.getElementById('minPrice')?.value?.trim()||'';
+            const ma=document.getElementById('maxPrice')?.value?.trim()||'';
+            const os=document.getElementById('onlyStock')?.checked||false;
+            const so=document.getElementById('sort')?.value||'';
+
+            if(q)  params.set('arama',q); else params.delete('arama');
+            if(mi) params.set('minPrice',mi); else params.delete('minPrice');
+            if(ma) params.set('maxPrice',ma); else params.delete('maxPrice');
+            if(os) params.set('onlyStock','1'); else params.delete('onlyStock');
+            if(so) params.set('sort',so); else params.delete('sort');
+
+            params.set('page','1');
+            // pageSize varsa koru; yoksa default ekle
+            if(!params.get('pageSize')) params.set('pageSize', String(getDefaultPageSize()));
+            if(rng) params.set('rng', rng);
+
+            window.location.href=baseUrl+'?'+params.toString();
+        }
+        function sortApply(){ filterApply(); }
+        function resetFilters(){
+            const baseUrl='@Url.Action("Index", "Uruns")';
+            const params=getQS();
+            params.delete('arama'); params.delete('minPrice'); params.delete('maxPrice'); params.delete('onlyStock'); params.delete('sort');
+            params.set('page','1');
+            if(!params.get('pageSize')) params.set('pageSize', String(getDefaultPageSize()));
+            params.set('rng', params.get('rng') || '@rng');
+            window.location.href=baseUrl+'?'+params.toString();
+        }
+
+        function mulberry32(a){ return function(){ var t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
+        function seededShuffle(arr, seed){
+            const rand = mulberry32(seed);
+            for(let i=arr.length-1;i>0;i--){
+                const j = Math.floor(rand()*(i+1));
+                [arr[i],arr[j]] = [arr[j],arr[i]];
+            }
+            return arr;
+        }
+        function applyClientRandom(){
+            const grid = document.getElementById('grid');
+            if(!grid) return;
+            const qs = getQS();
+            const rngStr = qs.get('rng') || '@rng';
+            const pageStr = '@(page)';
+            const seed = (parseInt(rngStr,10) || 0) + (parseInt(pageStr,10)||0)*10007;
+
+            const nodes = Array.from(grid.querySelectorAll('.js-item'));
+
+            const sort = (qs.get('sort')||'').toLowerCase();
+            if(sort) return;
+
+            seededShuffle(nodes, seed);
+            nodes.forEach(n=>grid.appendChild(n));
+        }
+
+        function applyClientFilters(){
+            const grid = document.getElementById('grid');
+            if(!grid) return;
+
+            const qs = getQS();
+            const min = parseFloat(qs.get('minPrice')||'');
+            const maxv = parseFloat(qs.get('maxPrice')||'');
+            const onlyStock = (qs.get('onlyStock')==='1' || (qs.get('onlyStock')||'').toLowerCase()==='true');
+            const sort = (qs.get('sort')||'').toLowerCase();
+
+            const cards = Array.from(grid.querySelectorAll('.js-item'));
+
+            let shown = 0;
+            cards.forEach(card=>{
+                const price = parseFloat(card.getAttribute('data-price')||'0');
+                const stock = parseInt(card.getAttribute('data-stock')||'0',10);
+                let ok = true;
+                if(!Number.isNaN(min)) ok = ok && price >= min;
+                if(!Number.isNaN(maxv)) ok = ok && price <= maxv;
+                if(onlyStock) ok = ok && stock > 0;
+                card.style.display = ok ? '' : 'none';
+                if(ok) shown++;
+            });
+
+            const visible = cards.filter(c=>c.style.display!=='none');
+            const sorters = {
+                fiyatasc:  (a,b)=> (parseFloat(a.dataset.price)-parseFloat(b.dataset.price)),
+                fiyatdesc: (a,b)=> (parseFloat(b.dataset.price)-parseFloat(a.dataset.price)),
+                yeni:      (a,b)=> (new Date(b.dataset.date)-new Date(a.dataset.date)),
+                populer:   (a,b)=> (parseInt(b.dataset.pop||'0')-parseInt(a.dataset.pop||'0'))
+            };
+            const by = sorters[sort];
+            if(by){ visible.sort(by).forEach(el=>grid.appendChild(el)); }
+
+            const totalEl = document.getElementById('totalCountText');
+            if(totalEl){
+                const total = parseInt(totalEl.dataset.total || '0', 10);
+                if(!Number.isNaN(min) || !Number.isNaN(maxv) || onlyStock || sort){
+                    totalEl.innerHTML = `Toplam <strong>${total}</strong> ürün — filtre sonrası: <strong>${shown}</strong>`;
+                } else {
+                    totalEl.innerHTML = `Toplam <strong>${total}</strong> ürün`;
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', ()=>{
+         const pag = document.querySelector('nav[aria-label="Sayfalama"] .pagination');
+         if (pag && window.matchMedia('(max-width: 575.98px)').matches){
+         pag.scrollLeft = 0; // soldan başla (1 önce)
+             }
+            });
+
+        document.addEventListener('click', function(e){
+            const a = e.target.closest('.pagination a.page-link, .urun-tabs a.nav-link');
+            if(!a) return;
+            try{
+                const url = new URL(a.href, window.location.origin);
+                // Mevcut pageSize varsa koru; yoksa Razor defaultunu ekle:
+                const currentQS = new URL(window.location.href).searchParams;
+                const pageSize = currentQS.get('pageSize') || String(getDefaultPageSize());
+                const currentRng = currentQS.get('rng') || '@rng';
+                if(pageSize) url.searchParams.set('pageSize', pageSize);
+                if(currentRng) url.searchParams.set('rng', currentRng);
+                a.href = url.pathname + '?' + url.searchParams.toString();
+            }catch(_){}
+        });
+
+        document.addEventListener('DOMContentLoaded', ()=>{
+            applyClientRandom();
+            applyClientFilters();
+        });
+        window.addEventListener('popstate', ()=>{
+            applyClientRandom();
+            applyClientFilters();
+        });
+
+        const toTop=document.getElementById('toTop');
+        window.addEventListener('scroll',()=>{ if(toTop) toTop.style.display=window.scrollY>400?'inline-flex':'none'; });
+        toTop?.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+    </script>
+}

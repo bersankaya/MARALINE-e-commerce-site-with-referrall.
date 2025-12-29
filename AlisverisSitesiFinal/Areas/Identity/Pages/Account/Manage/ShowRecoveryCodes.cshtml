@@ -1,0 +1,173 @@
+﻿@page
+@model ShowRecoveryCodesModel
+@{
+    ViewData["Title"] = "Kurtarma Kodları";
+    ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
+}
+
+<partial name="_StatusMessage" for="StatusMessage" />
+
+<style>
+    /* Sade ve okunaklı kod kartı stili */
+    .codes-wrap {
+        background: #f8f9fa;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+    .recovery-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px 16px;
+    }
+    @@media (max-width: 576px) {
+        .recovery-grid
+
+    {
+        grid-template-columns: 1fr;
+    }
+
+    }
+
+    .recovery-item {
+        background: #ffffff;
+        border: 1px dashed #d1d5db;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 0.95rem;
+        letter-spacing: .5px;
+        user-select: text;
+    }
+</style>
+
+<div class="container py-3 py-md-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+
+            <div class="card border-0 shadow-sm" style="border-radius:1rem;">
+                <div class="card-body p-4 p-md-5">
+
+                    <!-- Başlık -->
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width:52px;height:52px;background:#e7f1ff;">
+                            <!-- can simidi / güvenlik simgesi -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="#0d6efd" viewBox="0 0 16 16" aria-hidden="true">
+                                <path d="M8 0a8 8 0 1 0 8 8A8.009 8.009 0 0 0 8 0Zm0 1.5A6.5 6.5 0 1 1 1.5 8 6.508 6.508 0 0 1 8 1.5Z" />
+                                <path d="M8 4.5a3.5 3.5 0 1 0 3.5 3.5A3.504 3.504 0 0 0 8 4.5Z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="h4 mb-0">@ViewData["Title"]</h1>
+                            <div class="text-muted small">Hesabınıza erişimi kaybettiğinizde kullanabileceğiniz tek kullanımlık kodlar</div>
+                        </div>
+                    </div>
+
+                    <!-- Uyarı -->
+                    <div class="alert alert-warning d-flex align-items-start gap-2" role="alert">
+                        <span class="mt-1" aria-hidden="true">⚠️</span>
+                        <div>
+                            <p class="mb-2"><strong>Bu kodları güvenli bir yerde saklayın.</strong></p>
+                            <ul class="mb-0 ps-3">
+                                <li>Cihazınızı kaybederseniz bu kodlarla giriş yapabilirsiniz.</li>
+                                <li>Her kod <strong>yalnızca bir kez</strong> geçerlidir.</li>
+                                <li>Ekran görüntüsü almak yerine güvenli bir şifre kasasında saklamanız önerilir.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Kodlar -->
+                    <div class="codes-wrap mb-3">
+                        <div id="codesGrid" class="recovery-grid">
+                            @for (var row = 0; row < Model.RecoveryCodes.Length; row++)
+                            {
+                                <div class="recovery-item">@Model.RecoveryCodes[row]</div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Aksiyonlar -->
+                    <div class="d-flex flex-wrap gap-2">
+                        <button id="copyBtn" type="button" class="btn btn-outline-primary">
+                            Panoya Kopyala
+                        </button>
+                        <button id="downloadBtn" type="button" class="btn btn-outline-secondary">
+                            TXT Olarak İndir
+                        </button>
+                        <button id="printBtn" type="button" class="btn btn-outline-dark">
+                            Yazdır
+                        </button>
+                        <a asp-page="./TwoFactorAuthentication" class="btn btn-light border">
+                            2FA Ayarlarına Dön
+                        </a>
+                    </div>
+
+                    <div class="text-muted small mt-3">
+                        Not: Kodları kimseyle paylaşmayın. Kaybederseniz yeni kodlar oluşturabilir ve eskilerini geçersiz kılabilirsiniz.
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            function getCodesAsText() {
+                var items = Array.from(document.querySelectorAll('.recovery-item'));
+                return items.map(x => x.textContent.trim()).join('\n');
+            }
+
+            // Panoya Kopyala (Clipboard API, güvenli bağlamda)
+            var copyBtn = document.getElementById('copyBtn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', async function () {
+                    var txt = getCodesAsText();
+                    try {
+                        if (navigator.clipboard && window.isSecureContext) {
+                            await navigator.clipboard.writeText(txt);
+                            copyBtn.textContent = 'Kopyalandı';
+                            setTimeout(() => copyBtn.textContent = 'Panoya Kopyala', 1500);
+                        } else {
+                            // Fallback
+                            window.prompt('Kopyalamak için Ctrl+C yapın ve Enter\'a basın:', txt);
+                        }
+                    } catch (e) {
+                        window.prompt('Kopyalamak için Ctrl+C yapın ve Enter\'a basın:', txt);
+                    }
+                });
+            }
+
+            // TXT olarak indir
+            var downloadBtn = document.getElementById('downloadBtn');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function () {
+                    var txt = getCodesAsText();
+                    var blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'kurtarma-kodlari.txt';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                });
+            }
+
+            // Yazdır
+            var printBtn = document.getElementById('printBtn');
+            if (printBtn) {
+                printBtn.addEventListener('click', function () {
+                    window.print();
+                });
+            }
+        })();
+    </script>
+}

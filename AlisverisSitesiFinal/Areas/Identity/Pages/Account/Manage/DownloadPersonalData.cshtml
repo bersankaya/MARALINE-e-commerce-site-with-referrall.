@@ -1,0 +1,90 @@
+﻿@page
+@model DownloadPersonalDataModel
+@{
+    ViewData["Title"] = "Kişisel Verilerini İndir";
+    ViewData["ActivePage"] = ManageNavPages.PersonalData;
+    var sm = TempData["StatusMessage"] as string;
+}
+
+@if (!string.IsNullOrWhiteSpace(sm))
+{
+    <partial name="_StatusMessage" model="sm" />
+}
+<div class="container py-3 py-md-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+
+            <div class="card border-0 shadow-sm" style="border-radius:1rem;">
+                <div class="card-body p-4 p-md-5">
+
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width:52px;height:52px;background:#e7f1ff;">
+                            <!-- İndir (download) simgesi -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="#0d6efd" viewBox="0 0 16 16" aria-hidden="true">
+                                <path d="M.5 9.9a.5.5 0 0 1 .5-.5h3.5v1H1v3h14v-3h-3.5v-1H15a.5.5 0 0 1 .5.5v4.1a.5.5 0 0 1-.5.5H1a.5.5 0 0 1-.5-.5V9.9z" />
+                                <path d="M7.646 10.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 1 0-.708-.708L8.5 9.293V1.5a.5.5 0 0 0-1 0v7.793L5.354 7.146a.5.5 0 1 0-.708.708l3 3z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="h4 mb-0">@ViewData["Title"]</h1>
+                            <div class="text-muted small">KVKK/Gizlilik • Veri taşınabilirliği</div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info d-flex align-items-start gap-2" role="alert">
+                        <span class="mt-1" aria-hidden="true">ℹ️</span>
+                        <div>
+                            Bu işlem, sistemimizde sizinle ilişkilendirilmiş kişisel verilerinizi bir **dosya**
+                            (genellikle JSON) olarak indirmenizi sağlar. Dosyayı güvenli bir yerde saklayın ve üçüncü
+                            kişilerle paylaşmayın.
+                        </div>
+                    </div>
+
+                    <ul class="mb-4 text-muted small ps-3">
+                        <li>İndirilen dosya yalnızca **sizin hesabınızla** ilgili verileri içerir.</li>
+                        <li>İndirme tamamlandığında tarayıcınız dosyayı kaydetmenizi isteyecektir.</li>
+                        <li>Güvenlik için ortak cihazlarda indirme yaparken dikkatli olun.</li>
+                    </ul>
+
+                    <form id="download-data-form" method="post" class="mt-3">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirmCheck" />
+                            <label class="form-check-label" for="confirmCheck">
+                                Kişisel verilerimi indirmek istediğimi ve bu dosyayı güvenle saklayacağımı onaylıyorum.
+                            </label>
+                        </div>
+
+                        <div class="d-flex flex-column flex-md-row gap-2">
+                            <button type="submit" id="downloadBtn" class="btn btn-primary btn-lg px-4" disabled>
+                                Verilerimi İndir
+                            </button>
+                            <a asp-page="./PersonalData" class="btn btn-outline-secondary btn-lg px-4">
+                                Geri Dön
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const confirmCheck = document.getElementById('confirmCheck');
+            const btn = document.getElementById('downloadBtn');
+
+            function toggleBtn() {
+                btn.disabled = !confirmCheck.checked;
+            }
+
+            confirmCheck.addEventListener('change', toggleBtn);
+            toggleBtn();
+        })();
+    </script>
+}

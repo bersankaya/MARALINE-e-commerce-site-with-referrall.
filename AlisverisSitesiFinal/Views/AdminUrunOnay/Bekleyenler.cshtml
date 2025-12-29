@@ -1,0 +1,88 @@
+﻿@model List<AlisverisSitesiFinal.Models.Urun>
+@{
+    ViewData["Title"] = "Fiyat Bekleyen Ürünler";
+}
+
+<div class="container py-4">
+    <h2 class="mb-3">Fiyat Bekleyen Ürünler</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Warning"] != null)
+    {
+        <div class="alert alert-warning">@TempData["Warning"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info">Şu anda fiyatlandırma bekleyen ürün bulunmuyor.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Görsel</th>
+                        <th>Ürün</th>
+                        <th>Satıcı Teklifi</th>
+                        <th>Eklenme</th>
+                        <th>Durum</th>
+                        <th class="text-end">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model)
+                    {
+                        <tr>
+                            <td style="width:100px">
+                                <img src="@(string.IsNullOrWhiteSpace(u.ResimUrl) ? "/images/placeholders/no-image.png" : u.ResimUrl)"
+                                     alt="@u.Ad" class="img-fluid" style="max-height:70px" />
+                            </td>
+                            <td>
+                                <div class="fw-semibold">@u.Ad</div>
+                                <div class="text-muted small">@u.Kategori?.Ad</div>
+                            </td>
+                            <td>
+                                @(u.SaticiTeklifFiyati.HasValue? u.SaticiTeklifFiyati.Value.ToString("C") : "-")
+                            </td>
+                            <td>@u.EklenmeTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                @switch (u.Durum)
+                                {
+                                    case AlisverisSitesiFinal.Models.UrunDurum.AdminFiyatBekliyor:
+                                        @:<span class="badge bg-warning text-dark">Fiyat Bekliyor</span>
+                                        break;
+                                    case AlisverisSitesiFinal.Models.UrunDurum.Taslak:
+                                        @:<span class="badge bg-secondary">Taslak</span>
+                                        break;
+                                    default:
+                                        @:<span class="badge bg-info">Diğer</span>
+                                        break;
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Fiyatlandir" asp-route-id="@u.Id" class="btn btn-sm btn-primary">
+                                    Fiyatlandır
+                                </a>
+                                <form asp-action="Reddet" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@u.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Bu ürünü reddetmek istediğinize emin misiniz?')">
+                                        Reddet
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

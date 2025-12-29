@@ -1,0 +1,185 @@
+﻿@* Pre-login full intro modal – Bootstrap 5, green theme, referans & bonus anlaşılır *@
+@* <div class="modal fade" id="introModal" tabindex="-1" aria-labelledby="introModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;">
+            <div class="modal-body p-0">
+
+                <!-- HERO -->
+                <section class="p-4 p-md-5 text-white"
+                         style="background: linear-gradient(135deg,#0a7f55,#19a06d);
+                                border-top-left-radius:16px;border-top-right-radius:16px;">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div>
+                            <h1 class="h3 mb-1" id="introModalLabel">Maraline’e hoş geldin 🌿</h1>
+                            <p class="mb-0 opacity-75">Gerçek ürün • şeffaf referans • güvenli ödeme.</p>
+                        </div>
+                        <button type="button" class="btn btn-light btn-sm rounded-circle" id="mlnClose">✕</button>
+                    </div>
+                </section>
+
+                <!-- ÖZET KARTLAR -->
+                <section class="p-4 p-md-5 pt-4">
+                    <div class="row g-3 g-md-4">
+                        <div class="col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="small text-uppercase text-success">1) Gerçek satış</div>
+                                    <h3 class="h6 mt-1">Faturalı alışveriş</h3>
+                                    <p class="mb-0">
+                                        Tüm satışlar <strong>e-Arşiv/e-Fatura</strong> ile kayıtlıdır. Fiyat kalemleri <strong>Ürün Bedeli</strong> + <strong>Platform Hizmeti</strong> + <strong>İşletme Payı</strong> olarak şeffaf ayrılır.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="small text-uppercase text-success">2) Referans bonus</div>
+                                    <h3 class="h6 mt-1">Kolay kazanç</h3>
+                                    <p class="mb-0">
+                                        Arkadaşlarını davet et. Arkadaşların alışveriş yaptığında <strong>sen bonus kazanırsın</strong>. Her davet için bonus, şeffaf ve adil şekilde ödenir.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="small text-uppercase text-success">3) Güvenli ödeme</div>
+                                    <h3 class="h6 mt-1">Şeffaf fon</h3>
+                                    <p class="mb-0">
+                                        Bonuslar yalnızca <strong>Platform Hizmet Bedeli</strong> fonundan ödenir. Ödemeler, ad–soyad eşleşen IBAN’a yapılır.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- REFERANS & BONUS GÖRSELİ – ANLAŞILIR -->
+                <section class="px-4 px-md-5 mb-4">
+                    <h2 class="h5 mb-3">Referans ve Bonus Sistemi</h2>
+                    <p class="mb-3">Her kullanıcı en fazla 2 kişi davet edebilir. Davet edilenlerin kişi başı <strong>≥ 4.000 TL</strong> alışveriş yapması durumunda <strong>200 TL bonus</strong> kazanırsın. Toplam kazanç <strong>20.000 TL</strong>’ye ulaştığında, satışa dayalı aylık düzenli kazanç başlar.</p>
+
+                    <div class="d-flex flex-column align-items-center gap-3">
+
+                        <!-- SEN -->
+                        <div class="text-center">
+                            <div class="p-3 rounded shadow-sm bg-success text-white" style="min-width:160px;">
+                                <strong>Sen</strong><br>
+                                Alışveriş ≥ 4.000 TL
+                            </div>
+                        </div>
+
+                        <!-- Ok -->
+                        <div style="width:2px; height:20px; background:#0a7f55;"></div>
+
+                        <!-- Arkadaşlar -->
+                        <div class="d-flex flex-wrap justify-content-center gap-4 mt-2">
+
+                            <div class="text-center">
+                                <div class="p-3 rounded shadow-sm bg-light border" style="min-width:140px;">
+                                    <strong>Arkadaş 1</strong><br>
+                                    Alışveriş ≥ 4.000 TL
+                                </div>
+                                <div class="text-success mt-1">+ 100 TL Bonus</div>
+                            </div>
+
+                            <div class="text-center">
+                                <div class="p-3 rounded shadow-sm bg-light border" style="min-width:140px;">
+                                    <strong>Arkadaş 2</strong><br>
+                                    Alışveriş ≥ 4.000 TL
+                                </div>
+                                <div class="text-success mt-1">+ 100 TL Bonus</div>
+                            </div>
+
+                        </div>
+
+                        <!-- Zincir ve pasif gelir -->
+                        <div class="mt-3 text-center text-muted" style="max-width:400px;">
+                            <small>
+                                Her iki aktif referans tamamlandığında bonuslar tetiklenir.<br>
+                                Maksimum <strong>10 seviye</strong>ye kadar zincir bonusu uygulanır.<br>
+                                Toplam bonus <strong>20.000 TL</strong>’yi geçerse aylık <strong>düzenli kazanç</strong> elde etme fırsatın olur. <br>
+                            </small>
+                        </div>
+
+                    </div>
+                </section>
+
+
+
+                <!-- GÜVEN -->
+                <section class="px-4 px-md-5 mb-4">
+                    <h2 class="h5 mb-3">Neden güvenilir?</h2>
+                    <ul class="list-unstyled mb-0">
+                        <li class="d-flex align-items-start mb-2"><span class="me-2">✅</span> Faturalar e-Arşiv/e-Fatura ile kayıtlı ve KDV mevzuatına uygundur.</li>
+                        <li class="d-flex align-items-start mb-2"><span class="me-2">✅</span> Bonuslar yalnızca banka/EFT ile, ad–soyad eşleşen IBAN’a ödenir.</li>
+                        <li class="d-flex align-items-start mb-2"><span class="me-2">✅</span> Fiyatlar şeffaf; ürün, hizmet ve işletme payı ayrı kalemlerde gösterilir.</li>
+                        <li class="d-flex align-items-start mb-2"><span class="me-2">✅</span> 14 gün cayma hakkı; iade süreci şeffaf yönetilir.</li>
+                    </ul>
+                </section>
+
+                <!-- CTA -->
+                <section class="px-4 px-md-5 pb-4">
+                    <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2">
+                        <a class="btn btn-success btn-lg w-100" href="/Identity/Account/Register">Anladım, kayıt ol</a>
+                        <a class="btn btn-outline-success btn-lg w-100" href="/Identity/Account/Login">Zaten üyeyim, giriş yap</a>
+                    </div>
+                    <p class="text-muted small mt-3 mb-0">
+                        Devam ederek Gizlilik, Çerez ve Satış Koşulları politikalarını kabul etmiş olursun.
+                    </p>
+                </section>
+
+            </div>
+
+            <!-- ALT -->
+            <div class="modal-footer border-0 pt-0">
+                <a href="#" id="mlnNever" class="small text-decoration-none text-muted me-auto">Bir daha gösterme</a>
+                <button type="button" class="btn btn-link text-muted" id="mlnClose2">Sonra bakacağım</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const KEY_LOCAL  = "maraline_intro_hide_forever";
+        const KEY_SESS   = "maraline_intro_hide_session";
+        const el         = document.getElementById('introModal');
+        if (!el || typeof bootstrap === 'undefined') return;
+
+        window.MLN_OPEN_INTRO = function() {
+            sessionStorage.removeItem(KEY_SESS);
+            const m = new bootstrap.Modal(el, { backdrop: 'static' });
+            m.show();
+        };
+
+        const hideForever = !!localStorage.getItem(KEY_LOCAL);
+        const hideSession = !!sessionStorage.getItem(KEY_SESS);
+
+        if (!hideForever && !hideSession) {
+            const modal = new bootstrap.Modal(el, { backdrop: 'static' });
+            modal.show();
+
+            const btnClose   = document.getElementById('mlnClose');
+            const btnClose2  = document.getElementById('mlnClose2');
+            const linkNever  = document.getElementById('mlnNever');
+
+            const closeForSession = () => {
+                sessionStorage.setItem(KEY_SESS, '1');
+                modal.hide();
+            };
+            const closeForever = (e) => {
+                e?.preventDefault();
+                localStorage.setItem(KEY_LOCAL, '1');
+                sessionStorage.removeItem(KEY_SESS);
+                modal.hide();
+            };
+
+            btnClose?.addEventListener('click', closeForSession);
+            btnClose2?.addEventListener('click', closeForSession);
+            linkNever?.addEventListener('click', closeForever);
+        }
+    })();
+</script> *@

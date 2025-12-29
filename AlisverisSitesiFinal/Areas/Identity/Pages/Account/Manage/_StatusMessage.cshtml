@@ -1,0 +1,17 @@
+﻿@model string
+
+@if (!string.IsNullOrEmpty(Model))
+{
+    var isError = Model.StartsWith("Error", StringComparison.OrdinalIgnoreCase)
+               || Model.Contains("hata", StringComparison.OrdinalIgnoreCase);
+    var statusClass = isError ? "danger" : "success";
+    var iconClass = isError ? "bi-exclamation-triangle-fill" : "bi-check-circle-fill";
+
+    <div class="alert alert-@statusClass d-flex align-items-center justify-content-between shadow-sm rounded-3 mb-3" role="alert" style="font-weight:500;">
+        <div class="d-flex align-items-center">
+            <i class="bi @iconClass me-2 fs-5"></i>
+            <div>@Model</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+    </div>
+}

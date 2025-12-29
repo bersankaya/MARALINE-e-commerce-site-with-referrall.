@@ -1,0 +1,19 @@
+﻿@model AlisverisSitesiFinal.Models.ReferralNode
+
+<li>
+    <strong>@Model.AdSoyad</strong>
+    <span>(@Model.Email)</span>
+    <span> | Harcama: @Model.ToplamHarcama.ToString("C")</span>
+    <span> | @(Model.AktifMi ? "Aktif" : "Pasif")</span>
+    <span> | Kayıt: @Model.KayitTarihi</span>
+
+    @if (Model.Cocuklar.Any())
+    {
+        <ul>
+            @foreach (var cocuk in Model.Cocuklar)
+            {
+                @await Html.PartialAsync("_ReferralTreePartial", cocuk)
+            }
+        </ul>
+    }
+</li>

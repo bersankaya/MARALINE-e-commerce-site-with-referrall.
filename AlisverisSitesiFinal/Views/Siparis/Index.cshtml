@@ -1,0 +1,305 @@
+﻿@model IEnumerable<AlisverisSitesiFinal.Models.Siparis>
+@using System.Globalization
+@await Html.PartialAsync("_Bildirimler")
+@{
+    ViewData["Title"] = "Siparişlerim";
+    var tr = new CultureInfo("tr-TR");
+
+    // Model null gelirse güvenli liste
+    var list = (Model ?? Enumerable.Empty<AlisverisSitesiFinal.Models.Siparis>()).ToList();
+
+    // ViewBag.Iadeler null olabilir -> güvenli okuma
+    var iadeler = ViewBag.Iadeler as IDictionary<int, AlisverisSitesiFinal.Models.IadeTalebi>;
+    int iadeSureGun = ViewBag.IadeSureGun is int g ? g : 14;
+    DateTime now = DateTime.Now;
+
+    // VARYASYON METNİ
+    string VarText(AlisverisSitesiFinal.Models.SiparisKalemi k)
+    {
+        var p = new List<string>();
+        if (!string.IsNullOrWhiteSpace(k.Renk)) p.Add($"Renk: {k.Renk}");
+        if (!string.IsNullOrWhiteSpace(k.Beden)) p.Add($"Beden: {k.Beden}");
+        if (!string.IsNullOrWhiteSpace(k.Boyut)) p.Add($"Boyut: {k.Boyut}");
+        if (!string.IsNullOrWhiteSpace(k.Numara)) p.Add($"Numara: {k.Numara}");
+        if (!string.IsNullOrWhiteSpace(k.Kapasite)) p.Add($"Kapasite: {k.Kapasite}");
+        if (!string.IsNullOrWhiteSpace(k.Materyal)) p.Add($"Materyal: {k.Materyal}");
+        if (!string.IsNullOrWhiteSpace(k.Desen)) p.Add($"Desen: {k.Desen}");
+
+        if (p.Count > 0) return string.Join(" • ", p);
+        if (!string.IsNullOrWhiteSpace(k.Aciklama)) return k.Aciklama!;
+        return "-";
+    }
+
+    string Badge(string? durum)
+    {
+        return durum switch
+        {
+            "Beklemede" => "badge bg-warning text-dark",
+            "Onaylandı" => "badge bg-primary",
+            "Kargolandı" => "badge bg-info text-dark",
+            "Tamamlandı" => "badge bg-success",
+            "Reddedildi" => "badge bg-danger",
+            "İade Onaylandı" => "badge bg-secondary",
+            "İade Kargoda" => "badge bg-info text-dark",
+            "İade Edildi" => "badge bg-dark",
+            _ => "badge bg-secondary"
+        };
+    }
+}
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h3 class="mb-0">Siparişlerim</h3>
+        <span class="text-muted">Toplam: <b>@list.Count</b></span>
+    </div>
+
+    @if (!list.Any())
+    {
+        <div class="alert alert-info shadow-sm">Henüz siparişiniz yok.</div>
+    }
+    else
+    {
+        @foreach (var s in list.OrderByDescending(x => x.SiparisTarihi))
+        {
+            AlisverisSitesiFinal.Models.IadeTalebi? talep = null;
+            if (iadeler != null && iadeler.TryGetValue(s.Id, out var tval)) { talep = tval; }
+            bool talepVar = talep != null;
+            var iadeSonTarih = s.SiparisTarihi.AddDays(iadeSureGun);
+            bool iadeSuresiDolmus = now > iadeSonTarih;
+            var kalanGun = Math.Max(0, (int)Math.Ceiling((iadeSonTarih - now).TotalDays));
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <div class="fw-semibold">Sipariş #@s.Id</div>
+                            <div class="text-muted small">@s.SiparisTarihi.ToString("g", tr)</div>
+                        </div>
+                        <div class="text-end">
+                            <div><span class="@Badge(s.Durum)">@s.Durum</span></div>
+                            <div class="fw-bold mt-1">@s.ToplamTutar.ToString("C", tr)</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-1 small mt-2">
+                        <span class="badge rounded-pill @(s.Durum == "Beklemede" ? "bg-warning text-dark" : "bg-light text-muted")">Beklemede</span>
+                        <span class="badge rounded-pill @(s.Durum == "Onaylandı" ? "bg-primary" : "bg-light text-muted")">Onaylandı</span>
+                        <span class="badge rounded-pill @(s.Durum == "Kargolandı" ? "bg-info text-dark" : "bg-light text-muted")">Kargolandı</span>
+                        <span class="badge rounded-pill @(s.Durum == "Tamamlandı" ? "bg-success" : "bg-light text-muted")">Tamamlandı</span>
+                        @if (s.Durum == "Reddedildi")
+                        {
+                            <span class="badge rounded-pill bg-danger">Reddedildi</span>
+                        }
+                        <span class="badge rounded-pill @(s.Durum == "İade Onaylandı" ? "bg-secondary" : "bg-light text-muted")">İade Onaylandı</span>
+                        <span class="badge rounded-pill @(s.Durum == "İade Kargoda" ? "bg-info text-dark" : "bg-light text-muted")">İade Kargoda</span>
+                        <span class="badge rounded-pill @(s.Durum == "İade Edildi" ? "bg-dark" : "bg-light text-muted")">İade Edildi</span>
+                    </div>
+
+                    @* ======= F A T U R A ======= *@
+                    <div class="mt-3">
+                        @if (string.Equals(s.FaturaDurumu, "Kesildi", StringComparison.OrdinalIgnoreCase)
+                                        && !string.IsNullOrWhiteSpace(s.EFaturaNo))
+                        {
+                            <a asp-controller="Siparis" asp-action="FaturaGor" asp-route-id="@s.Id"
+                               class="btn btn-sm btn-outline-primary">Faturayı Aç</a>
+                            <div class="small text-muted mt-1">
+                                No: @s.EFaturaNo<br />
+                                Tarih: @(s.EFaturaTarihi?.ToString("dd.MM.yyyy") ?? "-")
+                            </div>
+                        }
+                        else if (string.Equals(s.Durum, "Onaylandı", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <span class="badge bg-warning text-dark">Fatura Hazırlanıyor</span>
+                            @if (User.IsInRole("Admin") || User.IsInRole("Satici"))
+                            {
+                                <form asp-controller="Siparis" asp-action="FaturaOlustur"
+                                      asp-route-id="@s.Id" method="post" class="d-inline ms-2">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Fatura Oluştur</button>
+                                </form>
+                            }
+                            <a asp-controller="Siparis" asp-action="ProformaPdf" asp-route-id="@s.Id"
+                               class="btn btn-sm btn-outline-dark">Faturalandırma (PDF)</a>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Sipariş: @s.Durum</span>
+                        }
+                    </div>
+                    @* ======= / F A T U R A ======= *@
+
+                    @* İade talebi *@
+                    @if (!string.Equals(s.Durum, "Beklemede", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <form asp-controller="Siparis" asp-action="IadeTalepEt" method="post" class="d-inline mt-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@s.Id" />
+                            <input type="hidden" name="aciklama" value="Ürün iade talebi" />
+                            <button type="submit"
+                                    class="btn btn-outline-secondary btn-sm"
+                                    @((talepVar || iadeSuresiDolmus) ? "disabled" : "")
+                                    onclick="if(!this.disabled){ this.disabled=true; this.innerText='Gönderiliyor...'; this.form.submit(); }">
+                                @(talepVar ? "İade Talebi Alındı" : "İade Talebi")
+                            </button>
+                        </form>
+                        @if (talepVar)
+                        {
+                            <span class="badge ms-2 bg-secondary">İade: @talep!.Durum</span>
+                        }
+                        @if (!talepVar && !iadeSuresiDolmus)
+                        {
+                            <div class="small text-muted mt-2">
+                                Yasal cayma hakkı: <b>@iadeSureGun gün</b>. Son gün: <b>@iadeSonTarih.ToString("dd.MM.yyyy")</b> (kalan: <b>@kalanGun</b> gün).
+                            </div>
+                        }
+                        else if (iadeSuresiDolmus)
+                        {
+                            <div class="small text-danger mt-2">
+                                İade süreniz dolmuştur. Son tarih: <b>@iadeSonTarih.ToString("dd.MM.yyyy")</b>.
+                            </div>
+                        }
+                    }
+
+                    @if (talepVar)
+                    {
+                        <div class="alert alert-warning mt-3 mb-0">
+                            <div class="fw-semibold">Ödeme Bilgisi Gerekli</div>
+                            <div class="small">İade tutarının hesabınıza yansıması için <b>IBAN bilginizi</b> Eklememişseniz lütfen Ekleyiniz. Yoksa Ödeme Yapılamaz</div>
+                            <div class="small text-muted">Ödeme en geç <b>14 gün</b> içinde hesabınıza aktarılır.</div>
+                        </div>
+                    }
+
+                    @if (talepVar && (s.Durum == "İade Onaylandı" || s.Durum == "İade Kargoda" || s.Durum == "İade Edildi"))
+                    {
+                        <div class="alert alert-info mt-3 mb-0">
+                            <div><strong>İade Süreci</strong></div>
+                            @if (!string.IsNullOrWhiteSpace(talep!.RmaKodu))
+                            {
+                                <div>RMA Kodu: <span class="text-monospace">@talep.RmaKodu</span></div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(talep.IadeAdres))
+                            {
+                                <div class="small text-muted">İade Adresi: @talep.IadeAdres</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(talep.IadeTalimat))
+                            {
+                                <div class="small">@talep.IadeTalimat</div>
+                            }
+
+                            @* Müşteri kargo bilgisi *@
+                            @if (s.Durum == "İade Onaylandı")
+                            {
+                                <hr class="my-2" />
+                                <form asp-controller="Siparis" asp-action="IadeKargoBilgisiGir" method="post" class="row g-2">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="talepId" value="@talep.Id" />
+                                    <div class="col-md-4">
+                                        <input class="form-control form-control-sm" name="firma"
+                                               value="@talep.MusteriKargoFirmasi" placeholder="Kargo firması" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input class="form-control form-control-sm" name="takipNo"
+                                               value="@talep.MusteriKargoTakipNo" placeholder="Takip no" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-primary btn-sm">Kargo Bilgisini Kaydet</button>
+                                    </div>
+                                </form>
+                            }
+
+                            @{
+                                bool iadeOdemeBekliyor = (s.Durum == "İade Edildi") && (talep.IadeOdemeTarihi == null);
+                            }
+                            @if (iadeOdemeBekliyor)
+                            {
+                                <hr class="my-2" />
+                                <div><strong>İade kabul edildi.</strong> Ürün tarafımıza ulaştı.</div>
+                                <div class="small">Ödeme en geç <b>14 gün</b> içinde yapılacaktır.</div>
+                                <div class="small text-muted mt-1">
+                                    Not: İade ile birlikte referans bonus eşiğini aşıyorsanız, bonus sistemindeki aktiflikten çıkarsınız.
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <div class="table-responsive d-none d-md-block mt-3">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:48px"></th>
+                                    <th>Ürün</th>
+                                    <th>Varyasyonlar</th>
+                                    <th class="text-center">Adet</th>
+                                    <th class="text-end">Birim</th>
+                                    <th class="text-end">Tutar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var k in (s.SiparisKalemleri ?? new List<AlisverisSitesiFinal.Models.SiparisKalemi>()))
+                                {
+                                    var birim = k.BirimFiyat;
+                                    <tr>
+                                        <td>
+                                            <a asp-controller="Uruns" asp-action="Details" asp-route-id="@k.Urun!.Id">
+                                                <img src="@(string.IsNullOrWhiteSpace(k.Urun?.ResimUrl) ? "/images/no-image.png" : k.Urun!.ResimUrl)" class="rounded" style="width:44px;height:44px;object-fit:cover" />
+                                            </a>
+                                        </td>
+                                        <td class="fw-semibold">
+                                            <a asp-controller="Uruns" asp-action="Details" asp-route-id="@k.Urun!.Id" class="text-decoration-none text-dark">
+                                                @k.Urun?.Ad
+                                            </a>
+                                        </td>
+                                        <td class="text-muted">@VarText(k)</td>
+                                        <td class="text-center">@k.Miktar</td>
+                                        <td class="text-end">@birim.ToString("C", tr)</td>
+                                        <td class="text-end">@((birim * k.Miktar).ToString("C", tr))</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-md-none mt-3">
+                        @foreach (var k in (s.SiparisKalemleri ?? new List<AlisverisSitesiFinal.Models.SiparisKalemi>()))
+                        {
+                            var birim = k.BirimFiyat;
+                            <div class="d-flex gap-3 align-items-start mb-2">
+                                <a asp-controller="Uruns" asp-action="Details" asp-route-id="@k.Urun!.Id">
+                                    <img src="@(string.IsNullOrWhiteSpace(k.Urun?.ResimUrl) ? "/images/no-image.png" : k.Urun!.ResimUrl)" class="rounded" style="width:56px;height:56px;object-fit:cover" />
+                                </a>
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold">
+                                        <a asp-controller="Uruns" asp-action="Details" asp-route-id="@k.Urun!.Id" class="text-decoration-none text-dark">
+                                            @k.Urun?.Ad
+                                        </a>
+                                    </div>
+                                    <div class="small text-muted">@VarText(k)</div>
+                                    <div class="d-flex justify-content-between small mt-1">
+                                        <div>Adet: <b>@k.Miktar</b></div>
+                                        <div>Birim: <b>@birim.ToString("C", tr)</b></div>
+                                        <div>Tutar: <b>@((birim * k.Miktar).ToString("C", tr))</b></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr class="my-2" />
+                        }
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-4 mt-3 small text-muted">
+                        <div><b>Kalem Sayısı:</b> @(s.SiparisKalemleri?.Count ?? 0)</div>
+                        <div><b>Toplam Tutar:</b> @s.ToplamTutar.ToString("C", tr)</div>
+                    </div>
+
+                    @if (s.Durum == "Reddedildi")
+                    {
+                        <div class="alert alert-danger rounded-4 d-flex align-items-start gap-2 mt-3 mb-0">
+                            <span class="fw-semibold">Reddetme Nedeni:</span>
+                            <span>@(!string.IsNullOrWhiteSpace(s.ReddetmeNedeni) ? s.ReddetmeNedeni : "Belirtilmedi")</span>
+                        </div>
+
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>

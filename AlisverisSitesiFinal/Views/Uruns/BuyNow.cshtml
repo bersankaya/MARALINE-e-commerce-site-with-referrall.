@@ -1,0 +1,32 @@
+@model AlisverisSitesiFinal.Models.Urun
+
+@{
+    ViewData["Title"] = "Hemen Satın Al";
+}
+
+<div class="container my-4">
+    <h2 class="mb-4 text-center">Hemen Satın Al</h2>
+
+    <div class="row g-4">
+        <div class="col-12 col-md-5">
+            <div class="card shadow-sm">
+                <img src="@Model.ResimUrl" class="card-img-top img-fluid" alt="@Model.Ad">
+            </div>
+        </div>
+
+        <div class="col-12 col-md-7">
+            <div class="card p-3 h-100">
+                <h3 class="card-title">@Model.Ad</h3>
+                <p class="card-text">@Model.Aciklama</p>
+                <p class="card-text fw-bold text-success fs-5">@Model.Fiyat.ToString("C")</p>
+
+                <form asp-controller="Urunler" asp-action="BuyNow" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg mt-3">Satın Al</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

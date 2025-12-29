@@ -1,0 +1,23 @@
+﻿@{
+    ViewData["Title"] = "Fatura Detay";
+}
+
+<h4>Fatura Detayı</h4>
+
+<p><strong>Durum:</strong> @ViewBag.Durum ?? "-" </p>
+<p><strong>Fatura No:</strong> @ViewBag.FaturaNo ?? "-" </p>
+<p><strong>Tarih:</strong> @(ViewBag.Tarih == null ? "-" : ((DateTime)ViewBag.Tarih).ToString("dd.MM.yyyy HH:mm"))</p>
+
+@if (!string.IsNullOrEmpty(ViewBag.FaturaUrl))
+{
+    <p>
+        <strong>Fatura PDF:</strong>
+        <a href="@ViewBag.FaturaUrl" target="_blank" class="btn btn-primary btn-sm">Faturayı Görüntüle</a>
+    </p>
+}
+else
+{
+    <p class="text-muted">
+        Fatura henüz oluşturulmamış veya entegratör bağlantısı sağlanmamış.
+    </p>
+}

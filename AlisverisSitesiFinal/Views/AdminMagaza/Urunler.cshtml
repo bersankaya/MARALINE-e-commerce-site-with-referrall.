@@ -1,0 +1,93 @@
+﻿@model IEnumerable<AlisverisSitesiFinal.Models.ViewModels.AdminUrunListeVM>
+@{
+    ViewData["Title"] = "Mağaza Ürünleri";
+    var saticilar = (IEnumerable<dynamic>)ViewBag.Saticilar;
+    string saticiId = ViewBag.SaticiId as string ?? "";
+    string q = ViewBag.Q as string ?? "";
+    bool? yayinda = ViewBag.Yayinda as bool?;
+}
+<h2 class="mb-3">@ViewData["Title"]</h2>
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-3">
+        <label class="form-label">Satıcı</label>
+        <select name="saticiId" class="form-select">
+            <option value="">Tümü</option>
+            @foreach (var s in saticilar)
+            {
+                <option value="@s.Id" selected="@(saticiId == s.Id)">@s.AdSoyad (@s.Email)</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Arama</label>
+        <input name="q" value="@q" class="form-control" placeholder="Ürün / kategori / satıcı" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Yayın</label>
+        <select name="yayinda" class="form-select">
+            <option value="">Tümü</option>
+            <option value="true" selected="@(yayinda == true)">Yayında</option>
+            <option value="false" selected="@(yayinda == false)">Pasif</option>
+        </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+        <button class="btn btn-success mt-auto">Filtrele</button>
+        <a class="btn btn-outline-secondary mt-auto" asp-action="Urunler">Temizle</a>
+
+        <!-- EXPORT -->
+        <a class="btn btn-outline-secondary mt-auto"
+           asp-action="ExportCsv"
+           asp-route-saticiId="@saticiId"
+           asp-route-q="@q"
+           asp-route-yayinda="@yayinda">CSV</a>
+
+        <a class="btn btn-outline-success mt-auto"
+           asp-action="ExportExcel"
+           asp-route-saticiId="@saticiId"
+           asp-route-q="@q"
+           asp-route-yayinda="@yayinda">Excel</a>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Ürün</th>
+                <th>Kategori</th>
+                <th class="text-end">Stok</th>
+                <th class="text-end">Satıcı Teklif</th>
+                <th class="text-end">Admin Fiyat</th>
+                <th class="text-end">Ref. Fiyat</th>
+                <th>Satıcı</th>
+                <th>Yayın</th>
+                <th>Eklenme</th>
+                <th style="width:90px"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var x in Model)
+            {
+                <tr>
+                    <td>#@x.UrunId - @x.UrunAdi</td>
+                    <td>@x.Kategori</td>
+                    <td class="text-end">@x.Stok</td>
+                    <td class="text-end">@((x.SaticiTeklifFiyati ?? 0m).ToString("C2"))</td>
+                    <td class="text-end">@((x.FiyatAdmin ?? 0m).ToString("C2"))</td>
+                    <td class="text-end">@((x.FiyatReferansli ?? 0m).ToString("C2"))</td>
+                    <td>
+                        <div>@x.SaticiAdSoyad</div>
+                        <div class="small text-muted">@x.SaticiEmail</div>
+                    </td>
+                    <td>@(x.YayindaMi ? "Yayında" : "Pasif")</td>
+                    <td>@x.EklenmeTarihi.ToString("g")</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary"
+                           asp-controller="Uruns" asp-action="Edit" asp-route-id="@x.UrunId">Düzenle</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

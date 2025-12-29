@@ -1,0 +1,319 @@
+﻿@model AlisverisSitesiFinal.Models.ViewModels.AdminOdemelerDashboardVM
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Ödemeler Panosu";
+
+    // ViewBag verileri
+    decimal toplamBonusDagitim = ViewBag.ToplamBonusDagitim is decimal d1 ? d1 : 0m;
+    decimal toplamMusteriCekim = ViewBag.ToplamMusteriCekim is decimal d2 ? d2 : (Model?.MusteriyeDagitim ?? 0m);
+
+    var aylikBonusDagitim = ViewBag.AylikBonusDagitim as List<decimal> ?? new List<decimal>();
+    var aylikMusteriCekim = ViewBag.AylikMusteriCekim as List<decimal> ?? (Model?.AylikMusteriDagitim ?? new List<decimal>());
+
+    var topMusteriler = ViewBag.TopMusteriler as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+
+    // Chart.js serileri
+    string labelsJson = JsonSerializer.Serialize(Model!.AyEtiketleri);
+    string netJson = JsonSerializer.Serialize(Model.AylikSaticiOdemeNet);
+    string komJson = JsonSerializer.Serialize(Model.AylikPlatformKazanci);
+    string cekimJson = JsonSerializer.Serialize(aylikMusteriCekim);
+    string bonusJson = JsonSerializer.Serialize(aylikBonusDagitim);
+}
+
+<style>
+    /* (stil aynı) */
+    .dash-title {
+        font-weight: 700;
+        letter-spacing: .3px
+    }
+
+    .kpi-card {
+        border: 0;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,.06);
+        transition: transform .2s,box-shadow .2s;
+        background: linear-gradient(180deg,#fff,#fafafa)
+    }
+
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 32px rgba(0,0,0,.1)
+        }
+
+    .kpi-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f3f6ff;
+        font-size: 20px
+    }
+
+    .kpi-value {
+        font-size: 1.45rem;
+        font-weight: 700;
+        margin: 4px 0 0 0
+    }
+
+    .kpi-sub {
+        color: #6c757d;
+        font-size: .9rem
+    }
+
+    .pill {
+        display: inline-block;
+        padding: .25rem .6rem;
+        border-radius: 999px;
+        background: #f1f3f5;
+        font-size: .75rem;
+        color: #6c757d
+    }
+
+    .section-card {
+        border: 0;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,.06)
+    }
+
+    .table thead th {
+        font-weight: 600;
+        color: #6c757d;
+        border-bottom: 1px solid #e9ecef
+    }
+
+    .table td, .table th {
+        vertical-align: middle
+    }
+</style>
+
+<div class="container my-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="dash-title mb-0">Ödemeler Panosu</h2>
+        <span class="pill">@DateTime.Now.ToString("dd.MM.yyyy")</span>
+    </div>
+
+    <!-- KPI’lar (değişmedi) -->
+    <div class="row g-3">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card kpi-card h-100">
+                <div class="card-body d-flex gap-3 align-items-center">
+                    <div class="kpi-icon">💳</div>
+                    <div>
+                        <div class="kpi-sub">Yapılan Toplam Ödemeler</div>
+                        <div class="kpi-value">@Model.ToplamOdemelerNet.ToString("N2") TL</div>
+                        <div class="text-muted small">Satıcıya net yapılan ödemeler</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card kpi-card h-100">
+                <div class="card-body d-flex gap-3 align-items-center">
+                    <div class="kpi-icon">⏳</div>
+                    <div>
+                        <div class="kpi-sub">Bekleyen Ödemeler</div>
+                        <div class="kpi-value">@Model.BekleyenOdemelerNet.ToString("N2") TL</div>
+                        <div class="text-muted small">Paketlenmemiş tamamlanan kalemler</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card kpi-card h-100">
+                <div class="card-body d-flex gap-3 align-items-center">
+                    <div class="kpi-icon">🏦</div>
+                    <div>
+                        <div class="kpi-sub">Platform Kazancı</div>
+                        <div class="kpi-value">@Model.PlatformKazanci.ToString("N2") TL</div>
+                        <div class="text-muted small">Komisyonlardan oluşan gelir</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card kpi-card h-100">
+                <div class="card-body d-flex gap-3 align-items-center">
+                    <div class="kpi-icon">💸</div>
+                    <div>
+                        <div class="kpi-sub">Müşteriye Dağıtılan (Çekimler)</div>
+                        <div class="kpi-value">@toplamMusteriCekim.ToString("N2") TL</div>
+                        <div class="text-muted small">Onaylanan para çekimleri toplamı</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card kpi-card h-100">
+                <div class="card-body d-flex gap-3 align-items-center">
+                    <div class="kpi-icon">🎁</div>
+                    <div>
+                        <div class="kpi-sub">Bonuslardan Dağıtılan</div>
+                        <div class="kpi-value">@toplamBonusDagitim.ToString("N2") TL</div>
+                        <div class="text-muted small">Motor kaynaklı bonus ödemeleri</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grafik + Top listeler -->
+    <div class="row g-3 mt-1">
+        <div class="col-12 col-xl-6">
+            <div class="card section-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">Aylık Özet</h5>
+                        <span class="pill">Son 12 ay</span>
+                    </div>
+                    <div style="height:250px;">
+                        <canvas id="odemelerChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-3">
+            <div class="card section-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">En Çok Ödeme Yapılan Satıcılar</h5>
+                        <span class="pill">Son 30 gün</span>
+                    </div>
+
+                    @if (Model.TopSaticilar?.Any() == true)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Satıcı</th>
+                                        <th class="text-end">Net Toplam</th>
+                                        <th class="text-end">Platform Geliri</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var s in Model.TopSaticilar)
+                                    {
+                                        <tr>
+                                            <td>@s.SaticiAdSoyad</td>
+                                            <td class="text-end">@s.NetToplam.ToString("N2") TL</td>
+                                            <td class="text-end">@s.PlatformGeliri.ToString("N2") TL</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted">Kayıt bulunamadı.</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-3">
+            <div class="card section-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">En Çok Ödeme Yapılan Müşteriler</h5>
+                        <span class="pill">Son 30 gün</span>
+                    </div>
+
+                    @if (topMusteriler.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Müşteri</th>
+                                        <th class="text-end">Çekim Toplamı</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var m in topMusteriler)
+                                    {
+                                        <tr>
+                                            <td>@m.AdSoyad</td>
+                                            <td class="text-end">@m.ToplamCekim.ToString("N2") TL</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted">Kayıt bulunamadı.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="text/javascript">
+        
+
+        (function () {
+            // Razor JSON'larını string olarak al, sonra parse et → TS1109 fix
+            var labels = JSON.parse('@Html.Raw(labelsJson)');
+            var dsNet  = JSON.parse('@Html.Raw(netJson)');
+            var dsKom  = JSON.parse('@Html.Raw(komJson)');
+            var dsCekim = JSON.parse('@Html.Raw(cekimJson)');
+            var dsBonus = JSON.parse('@Html.Raw(bonusJson)');
+
+            var ctx = document.getElementById('odemelerChart').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Satıcı Ödemeleri (Net)', data: dsNet,  tension: 0.3 },
+                        { label: 'Platform Kazancı',       data: dsKom,  tension: 0.3 },
+                        { label: 'Müşteri Çekimleri',      data: dsCekim, tension: 0.3 },
+                        { label: 'Bonus Dağıtımı',         data: dsBonus, tension: 0.3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    var v = (ctx && ctx.parsed && typeof ctx.parsed.y === 'number') ? ctx.parsed.y : 0;
+                                    return ctx.dataset.label + ': ' +
+                                        v.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+                                        ' TL';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { callback: function (v) { return Number(v).toLocaleString('tr-TR'); } },
+                            grid: { color: 'rgba(0,0,0,.06)' }
+                        },
+                        x: { grid: { display: false } }
+                    },
+                    elements: { point: { radius: 2 } }
+                }
+            });
+        })();
+    </script>
+}
+
+

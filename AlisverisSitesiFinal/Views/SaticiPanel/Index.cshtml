@@ -1,0 +1,11 @@
+﻿@{
+    ViewData["Title"] = "Satıcı Paneli";
+}
+<h2>Satıcı Paneli</h2>
+<div class="list-group my-3">
+    <a class="list-group-item list-group-item-action" asp-controller="Uruns" asp-action="Create">Ürün Ekle (Teklif Fiyatıyla)</a>
+    <a class="list-group-item list-group-item-action" asp-controller="SaticiSiparisleri" asp-action="Index">Siparişlerim (Onayla/Kargola)</a>
+    <a class="list-group-item list-group-item-action" asp-controller="SaticiRapor" asp-action="Satislar">Toplam Satışlarım</a>
+    <a class="list-group-item list-group-item-action" asp-controller="SaticiRapor" asp-action="Kazanc">Kazançlarım</a>
+</div>
+<p class="text-muted small">Not: Ürünlerin sitede yayınlanması için admin fiyatlandırması gerekir.</p>

@@ -1,0 +1,23 @@
+﻿@model AlisverisSitesiFinal.Models.Adres
+@{
+    ViewData["Title"] = "Yeni Adres";
+}
+
+<div class="container my-4">
+    <h2 class="mb-3">Yeni Adres Ekle</h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    <partial name="_AdresForm" model="Model" />
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

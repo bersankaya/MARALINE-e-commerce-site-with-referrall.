@@ -1,0 +1,128 @@
+﻿@model IEnumerable<AlisverisSitesiFinal.Models.Urun>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Ürünlerim";
+    var tr = new CultureInfo("tr-TR");
+
+    string Badge(string? durum, bool yayinda) =>
+        durum switch
+        {
+            "Yayinda" => "badge bg-success",
+            "AdminFiyatBekliyor" => "badge bg-warning text-dark",
+            "Pasif" => "badge bg-secondary",
+            _ => yayinda ? "badge bg-success" : "badge bg-secondary"
+        };
+}
+
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Ürünlerim</h2>
+        <form method="get" class="d-flex gap-2">
+            <input type="text" name="q" value="@Context.Request.Query["q"]" class="form-control" placeholder="Ürün adı / açıklama" />
+            <button class="btn btn-outline-secondary">Ara</button>
+        </form>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success rounded-4">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger rounded-4">@TempData["ErrorMessage"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info rounded-4">Henüz ürününüz yok.</div>
+    }
+    else
+    {
+        <!-- Masaüstü: tablo -->
+        <div class="table-responsive d-none d-md-block">
+            <table class="table align-middle table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:56px;"></th>
+                        <th>Ürün</th>
+                        <th>Kategori</th>
+                        <th class="text-center">Stok</th>
+                        <th class="text-end">Fiyat (görünen)</th>
+                        <th class="text-center">Durum</th>
+                        <th class="text-end">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model)
+                    {
+                        <tr>
+                            <td>
+                                <img src="@(string.IsNullOrWhiteSpace(u.ResimUrl) ? "/images/no-image.png" : u.ResimUrl)" class="rounded" style="width:48px;height:48px;object-fit:cover" />
+                            </td>
+                            <td class="fw-semibold">@u.Ad</td>
+                            <td>@u.Kategori?.Ad</td>
+                            <td class="text-center">@u.StokAdedi</td>
+                            <td class="text-end">@u.Fiyat.ToString("C2", tr)</td>
+                            <td class="text-center">
+                                <span class="@Badge(u.Durum.ToString(), u.YayindaMi)">@u.Durum</span>
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-sm btn-outline-secondary">Düzenle</a>
+
+                                <form asp-action="Delete" method="post" class="d-inline ms-1">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@u.Id" />
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Silinsin mi? Siparişlerde kullanılmış ürünler silinemez.');">
+                                        Sil
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobil: kart -->
+        <div class="d-md-none">
+            @foreach (var u in Model)
+            {
+                <div class="card rounded-4 shadow-sm mb-3">
+                    <div class="card-body">
+                        <div class="d-flex gap-3">
+                            <img src="@(string.IsNullOrWhiteSpace(u.ResimUrl) ? "/images/no-image.png" : u.ResimUrl)" class="rounded" style="width:72px;height:72px;object-fit:cover" />
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between">
+                                    <div class="fw-semibold">@u.Ad</div>
+                                    <span class="@Badge(u.Durum.ToString(), u.YayindaMi)">@u.Durum</span>
+                                </div>
+                                <div class="small text-muted">@u.Kategori?.Ad</div>
+                                <div class="d-flex justify-content-between small mt-1">
+                                    <div>Stok: <b>@u.StokAdedi</b></div>
+                                    <div>Fiyat: <b>@u.Fiyat.ToString("C2", tr)</b></div>
+                                </div>
+
+                                <div class="mt-2 d-flex flex-column gap-2">
+                                    <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-outline-secondary w-100">Düzenle</a>
+                                    <form asp-action="Delete" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@u.Id" />
+                                        <button class="btn btn-outline-danger w-100"
+                                                onclick="return confirm('Silinsin mi? Siparişlerde kullanılmış ürünler silinemez.');">
+                                            Sil
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

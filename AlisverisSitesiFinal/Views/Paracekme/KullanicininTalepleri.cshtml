@@ -1,0 +1,93 @@
+﻿@model List<AlisverisSitesiFinal.Models.ParaCekmeTalebi>
+
+@{
+    ViewData["Title"] = "Para Çekme Taleplerim";
+    var esik = (decimal?)ViewData["Eşik"] ?? 4000m;       // eşik (varsayılan 4000)
+
+}
+<!-- Ödeme Uyarı Banner(ları) -->
+<div class="odeme-banner" role="note" aria-label="Ödeme Bilgilendirme">
+    <i class="bi bi-info-circle-fill"></i>
+    <div class="odeme-banner-body">
+        <p>
+            Eğer <b>@esik.ToString("N0") ₺</b> eşiği geçmişseniz ve iade süresi olan 14 gün de dolmuşsa,
+            onaylanan para çekme talepleri her ayın <strong>1’inde</strong> ödenir.
+        </p>
+    </div>
+</div>
+
+<div class="odeme-banner odeme-banner--warn" role="note" aria-label="Uyarı">
+    <i class="bi bi-exclamation-circle-fill"></i>
+    <div class="odeme-banner-body">
+        <p>Şartlar sağlanmamışsa para çekme talepleri reddedilir.</p>
+    </div>
+</div>
+<style>
+    .odeme-banner {
+        background: linear-gradient(90deg, #cceeff, #b3e6ff);
+        color: #004d66;
+        font-size: 1.1rem;
+        font-weight: 500;
+        padding: 12px 20px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+        .odeme-banner i {
+            font-size: 1.4rem;
+            color: #0077b3;
+        }
+
+        .odeme-banner strong {
+            font-weight: 700;
+            margin: 0 4px; /* Pazartesi ile diğer kelimeler arasında boşluk */
+        }
+</style>
+
+<h2 class="mb-4 text-primary">📋 Para Çekme Taleplerim</h2>
+
+@if (Model.Count == 0)
+{
+    <div class="alert alert-info">Henüz hiçbir para çekme talebiniz bulunmamaktadır.</div>
+}
+else
+{
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>Tutar</th>
+                <th>IBAN</th>
+                <th>Tarih</th>
+                <th>Durum</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Tutar.ToString("C")</td>
+                    <td>@item.IBAN</td>
+                    <td>@item.TalepTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                    <td>
+                        @if (item.OnaylandiMi)
+                        {
+                            <span class="text-success">✅ Onaylandı</span>
+                        }
+                        else if (item.ReddedildiMi)
+                        {
+                            <span class="text-danger">❌ Reddedildi</span>
+                        }
+                        else
+                        {
+                            <span class="text-warning">⏳ Beklemede</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

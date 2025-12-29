@@ -1,0 +1,79 @@
+﻿@page
+@model PersonalDataModel
+@{
+    ViewData["Title"] = "Kişisel Veriler";
+    ViewData["ActivePage"] = ManageNavPages.PersonalData;
+    var sm = TempData["StatusMessage"] as string;
+}
+
+@if (!string.IsNullOrWhiteSpace(sm))
+{
+    <partial name="_StatusMessage" model="sm" />
+}
+<div class="container py-3 py-md-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+
+            <div class="card border-0 shadow-sm" style="border-radius:1rem;">
+                <div class="card-body p-4 p-md-5">
+
+                    <!-- Başlık -->
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width:52px;height:52px;background:#e7f1ff;">
+                            <!-- Kişisel veri simgesi -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="#0d6efd" viewBox="0 0 16 16" aria-hidden="true">
+                                <path d="M8 8a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm4 8a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="h4 mb-0">@ViewData["Title"]</h1>
+                            <div class="text-muted small">KVKK / GDPR kapsamında veri indirme ve silme</div>
+                        </div>
+                    </div>
+
+                    <!-- Açıklama -->
+                    <p class="mb-2">
+                        Hesabınız, bize verdiğiniz kişisel verileri içermektedir.
+                        Bu sayfa, söz konusu verileri <strong>indirmenize</strong> veya <strong>silmenize</strong> olanak tanır.
+                    </p>
+
+                    <div class="alert alert-warning d-flex align-items-start gap-2 mt-3" role="alert">
+                        <span class="mt-1" aria-hidden="true">⚠️</span>
+                        <div>
+                            <p class="mb-1"><strong>Verileri silmek, hesabınızı kalıcı olarak siler.</strong></p>
+                            <p class="mb-0">Bu işlem geri alınamaz ve veriler kurtarılamaz.</p>
+                        </div>
+                    </div>
+
+                    <!-- İşlemler -->
+                    <div class="d-flex flex-column flex-md-row gap-2 mt-4">
+                        <!-- İndir (POST) -->
+                        <form id="download-data" asp-page="DownloadPersonalData" method="post" class="d-inline">
+                            <button class="btn btn-primary btn-lg px-4" type="submit">
+                                Verilerimi İndir
+                            </button>
+                        </form>
+
+                        <!-- Sil (ayrı sayfada onaylı akış) -->
+                        <a id="delete"
+                           asp-page="DeletePersonalData"
+                           class="btn btn-outline-danger btn-lg px-4">
+                            Hesabımı ve Verilerimi Sil
+                        </a>
+                    </div>
+
+                    <div class="text-muted small mt-3">
+                        Not: İndirilen dosya genellikle JSON formatındadır. Güvenli bir yerde saklayın ve üçüncü kişilerle paylaşmayın.
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

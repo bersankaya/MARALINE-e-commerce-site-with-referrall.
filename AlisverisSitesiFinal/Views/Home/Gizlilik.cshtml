@@ -1,0 +1,197 @@
+﻿@{
+    ViewData["Title"] = "Gizlilik Politikası";
+    Layout = "_Layout";
+}
+
+<section class="container my-5">
+    <h1 class="mb-4">Gizlilik Politikası ve KVKK Aydınlatma Metni</h1>
+    <p class="text-muted">Yürürlük Tarihi: @DateTime.Now.ToString("dd.MM.yyyy") — Son Güncelleme: @DateTime.Now.ToString("dd.MM.yyyy")</p>
+
+    <div class="alert alert-success small">
+        Bu sayfa 6698 sayılı <strong>Kişisel Verilerin Korunması Kanunu (KVKK)</strong>, ilgili ikincil mevzuat ve e-ticaret/ödeme güvenliği standartlarına uygun şekilde hazırlanmış genel bir bilgilendirmedir.
+    </div>
+
+    <h5 class="mt-4">İçindekiler</h5>
+    <ol class="small">
+        <li><a href="#kvkk-veri-sorumlusu">Veri Sorumlusu ve İletişim</a></li>
+        <li><a href="#kvkk-kapsam">Kapsam, Tanımlar ve Dayanak</a></li>
+        <li><a href="#kvkk-kategoriler">İşlenen Kişisel Veri Kategorileri</a></li>
+        <li><a href="#kvkk-amac-hukuki-sebep">İşleme Amaçlarımız ve Hukuki Sebepler</a></li>
+        <li><a href="#kvkk-aktarım">Yurtiçi/Yurtdışı Aktarım</a></li>
+        <li><a href="#kvkk-sure">Saklama Süreleri</a></li>
+        <li><a href="#kvkk-guvenlik">Teknik ve İdari Tedbirler</a></li>
+        <li><a href="#kvkk-cerez">Çerez (Cookie) Politikası Özeti</a></li>
+        <li><a href="#kvkk-haklar">KVKK m.11 Kapsamındaki Haklarınız</a></li>
+        <li><a href="#kvkk-basvuru">Başvuru Usulü ve Yanıt Süreleri</a></li>
+        <li><a href="#kvkk-guncelleme">Güncellemeler</a></li>
+    </ol>
+
+    <hr class="my-4" />
+
+    <h4 id="kvkk-veri-sorumlusu">1) Veri Sorumlusu ve İletişim</h4>
+    <p>
+        Bu sitede yürütülen veri işleme faaliyetlerinden <strong>Maraline</strong> veri sorumlusu sıfatıyla sorumludur.
+        <br />E-posta: <a href="mailto:destek@maraline.com">maralinemagaza@gmail.com</a>
+        <br />Adres: Pehlivan Mah. Colemerik caddesi No:32 Daire:9 HAKKARİ/MERKEZ<!-- Şirket adresinizi ekleyin -->
+        <br />Mersis/Vergi No: 5341714486 <!-- İsteğe bağlı -->
+    </p>
+
+    <h4 id="kvkk-kapsam" class="mt-4">2) Kapsam, Tanımlar ve Dayanak</h4>
+    <p>
+        Bu metin; üyelik, sipariş, ödeme, teslimat, iade ve destek süreçleri dâhil olmak üzere
+        <em>maraline.com.tr</em> alan adı ve alt alan adlarında yürütülen tüm çevrimiçi faaliyetler için geçerlidir.
+        6698 sayılı KVKK, Türk Borçlar Kanunu, TTK, 6563 sayılı ETK, Mesafeli Sözleşmeler Yönetmeliği ve
+        ödeme hizmetleri mevzuatına dayanır.
+    </p>
+
+    <h4 id="kvkk-kategoriler" class="mt-4">3) İşlenen Kişisel Veri Kategorileri</h4>
+    <ul>
+        <li><strong>Kimlik</strong>: Ad, Soyad, (gerekirse) TCKN* <!-- TCKN sadece mevzuata/kimlik doğrulamaya zorunlu hallerde --></li>
+        <li><strong>İletişim</strong>: E-posta, GSM/Telefon, Fatura/Teslimat Adresi</li>
+        <li><strong>Müşteri/Üyelik İşlemleri</strong>: Üyelik bilgileri, sipariş geçmişi, sepet, iade talepleri</li>
+        <li><strong>Finans</strong>: Ödeme tutarları, fatura bilgileri (Kart verileri <u>Maraline tarafından tutulmaz</u>)</li>
+        <li><strong>İşlem Güvenliği</strong>: IP, tarayıcı/cihaz bilgisi, oturum logları, çerezler</li>
+        <li><strong>Pazarlama</strong>: İzinli bildirim tercihleri, kampanya etkileşimleri</li>
+        <li><strong>Çağrı/Destek</strong>: Talep kayıtları, yazışmalar</li>
+    </ul>
+    <p class="small text-muted">
+        *TCKN, yalnızca zorunlu hallerde (ör. faturalandırma/kimlik doğrulaması) ve mevzuata uygun şekilde işlenir.
+    </p>
+
+    <h4 id="kvkk-amac-hukuki-sebep" class="mt-4">4) İşleme Amaçlarımız ve Hukuki Sebepler</h4>
+    <p>Aşağıda başlıca amaç-hukuki sebep eşleştirmesi özetlenmiştir:</p>
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Amaç</th>
+                    <th>Örnek Veri</th>
+                    <th>Hukuki Sebep (KVKK m.5/2, m.6)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Üyelik ve hesap yönetimi</td>
+                    <td>Ad, soyad, e-posta, telefon</td>
+                    <td>Sözleşmenin kurulması/ifası (m.5/2-c), meşru menfaat (m.5/2-f)</td>
+                </tr>
+                <tr>
+                    <td>Sipariş, teslimat, iade süreçleri</td>
+                    <td>Adres, sipariş verileri, iade belgeleri</td>
+                    <td>Sözleşme (m.5/2-c), hukuki yükümlülük (m.5/2-ç)</td>
+                </tr>
+                <tr>
+                    <td>Ödeme işlemleri</td>
+                    <td>Ödeme tutarı, fatura bilgisi</td>
+                    <td>Hukuki yükümlülük (m.5/2-ç), sözleşme (m.5/2-c)</td>
+                </tr>
+                <tr>
+                    <td>Dolandırıcılık ve güvenlik</td>
+                    <td>IP, cihaz bilgisi, oturum kayıtları</td>
+                    <td>Meşru menfaat (m.5/2-f), hukuki yükümlülük (m.5/2-ç)</td>
+                </tr>
+                <tr>
+                    <td>Müşteri desteği</td>
+                    <td>Talepler, yazışmalar</td>
+                    <td>Sözleşme (m.5/2-c), meşru menfaat (m.5/2-f)</td>
+                </tr>
+                <tr>
+                    <td>KVKK ve ticari ileti izinleri</td>
+                    <td>İzin durumu, tercih yönetimi</td>
+                    <td>Açık rıza (m.5/1) gerektiren hallerde açık rıza</td>
+                </tr>
+                <tr>
+                    <td>İstatistik ve iyileştirme</td>
+                    <td>Anonim/pseudonim kullanım verileri</td>
+                    <td>Meşru menfaat (m.5/2-f)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <p class="small">
+        Özel nitelikli veriler (KVKK m.6) kural olarak işlenmez; zorunlu hallerde yalnızca kanundaki istisnalara dayalı ve ek tedbirlerle işlenir.
+    </p>
+
+    <h4 id="kvkk-aktarım" class="mt-4">5) Kişisel Verilerin Aktarımı (Yurtiçi/Yurtdışı)</h4>
+    <p>
+        Hizmetin gerektirdiği ölçüde verileriniz; ödeme hizmeti sağlayıcıları (<strong>PayTr</strong> — PCI-DSS uyumlu), kargo/lojistik, barındırma ve altyapı firmaları, hukuk/muhasebe danışmanları ve düzenleyici kurumlar ile paylaşılabilir.
+        Yurt dışına aktarım gerektiğinde KVKK m.9 çerçevesinde kurul kararları ve uygun güvenlik önlemleri sağlanır.
+        Kart bilgileriniz Maraline tarafından <u>tutulmaz</u>; ödeme işlemleri PayTr altyapısı üzerinden güvenli şekilde gerçekleştirilir.
+    </p>
+
+    <h4 id="kvkk-sure" class="mt-4">6) Saklama Süreleri</h4>
+    <ul>
+        <li><strong>Sözleşmesel ve ticari kayıtlar:</strong> İlgili kanunlarda öngörülen azami süreler (ör. TTK/vergisel süreler)</li>
+        <li><strong>Üyelik/veri tabanları:</strong> Meşru menfaat ve hesap verebilirlik ilkeleri doğrultusunda gerekli süre</li>
+        <li><strong>Destek kayıtları:</strong> İşlemden sonra makul süre</li>
+        <li><strong>Çerezler:</strong> Türüne göre oturum süresince veya belirlenen süreler</li>
+    </ul>
+    <p>Gerekli süre dolduğunda veriler anonimize edilir veya güvenli şekilde silinir.</p>
+
+    <h4 id="kvkk-guvenlik" class="mt-4">7) Teknik ve İdari Tedbirler</h4>
+    <ul>
+        <li>HTTPS/SSL, erişim kontrolü, güçlü parola ve çok faktörlü güvenlik politikaları</li>
+        <li>Loglama, izleme ve anormallik tespiti</li>
+        <li>Yetkisiz erişime karşı ağ ve uygulama katmanı güvenliği</li>
+        <li>Barındırma sağlayıcılarında yedekleme ve felaket kurtarma planları</li>
+        <li>Personel yetkilendirme, gizlilik yükümlülükleri ve eğitimler</li>
+    </ul>
+
+    <h4 id="kvkk-cerez" class="mt-4">8) Çerez (Cookie) Politikası Özeti</h4>
+    <p>
+        Sitede zorunlu, performans ve tercihe dayalı çerezler kullanılabilir. Zorunlu çerezler temel işlevler için gereklidir.
+        Tercih/analitik çerezler site deneyimini geliştirmek ve hataları gidermek için kullanılır. Tarayıcınızdan çerezleri yönetebilirsiniz.
+    </p>
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+            <thead class="table-light">
+                <tr><th>Tür</th><th>Açıklama</th><th>Ömür</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Zorunlu</td><td>Oturum, güvenlik ve sepet işlevleri</td><td>Oturum süresi</td></tr>
+                <tr><td>Tercih</td><td>Dil/sepet tercihi vb.</td><td>1 gün – 12 ay</td></tr>
+                <tr><td>Analitik</td><td>Anonim ölçüm ve hata ayıklama</td><td>1 gün – 24 ay</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h4 id="kvkk-haklar" class="mt-4">9) KVKK m.11 Kapsamındaki Haklarınız</h4>
+    <p>Aşağıdaki haklara sahipsiniz:</p>
+    <ul>
+        <li>Kişisel verilerinizin işlenip işlenmediğini öğrenme</li>
+        <li>İşlenmişse buna ilişkin bilgi talep etme</li>
+        <li>İşleme amacını ve amaca uygun kullanılıp kullanılmadığını öğrenme</li>
+        <li>Yurt içinde/yurt dışında aktarıldığı üçüncü kişileri bilme</li>
+        <li>Eksik veya yanlış işlenmişse düzeltilmesini isteme</li>
+        <li>KVKK ve ilgili mevzuata aykırı işlenmişse silinmesini/yok edilmesini isteme</li>
+        <li>Aktarılan üçüncü kişilere bildirilmesini talep etme</li>
+        <li>Otomatik sistemlerle analiz edilmesi suretiyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme</li>
+        <li>Zararın giderilmesini talep etme</li>
+    </ul>
+
+    <h4 id="kvkk-basvuru" class="mt-4">10) Başvuru Usulü ve Yanıt Süreleri</h4>
+    <p>
+        Başvurularınızı KVKK Başvuru Formu (varsa) veya aşağıdaki kanallar üzerinden iletebilirsiniz:
+    </p>
+    <ul>
+        <li>E-posta: <a href="mailto:maralinemagaza@gmail.com">maralinemagaza@gmail.com</a> (kayıtlı elektronik posta varsa KEP adresinizden)</li>
+        <li>Posta: maralinemagaza@gmail.com</li>
+    </ul>
+    <p>
+        Başvurularınız, talebin niteliğine göre en geç <strong>30 gün</strong> içinde ücretsiz olarak sonuçlandırılır; işlemin ayrıca bir maliyet gerektirmesi hâlinde Kurulca belirlenen tarifedeki ücret alınabilir.
+    </p>
+
+    <h4 id="kvkk-guncelleme" class="mt-4">11) Güncellemeler ve Yürürlük</h4>
+    <p>
+        Bu metin; yeni mevzuat değişiklikleri, hizmet kapsamındaki güncellemeler veya güvenlik gereklilikleri nedeniyle zaman zaman revize edilebilir.
+        Güncel sürüm her zaman bu sayfada yayımlanır ve yayım tarihinde yürürlüğe girer.
+    </p>
+
+    <hr class="my-4" />
+
+    <div class="alert alert-info small">
+        <strong>Not:</strong> Kart verileriniz Maraline tarafından saklanmaz; ödemeler PCI-DSS uyumlu <strong>PayTr</strong> altyapısı üzerinden gerçekleştirilir.
+        İade/cayma süreçlerinin detayları için <a asp-controller="Home" asp-action="IadeBilgisi">İade Bilgisi</a> sayfamıza, mesafeli alım hükümleri için
+        <a asp-controller="Home" asp-action="MesafeliSatis">Mesafeli Satış Sözleşmesi</a>’ne bakabilirsiniz.
+    </div>
+</section>

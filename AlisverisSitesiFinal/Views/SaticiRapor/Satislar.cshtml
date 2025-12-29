@@ -1,0 +1,163 @@
+﻿@model IEnumerable<AlisverisSitesiFinal.Models.SiparisKalemi>
+@{
+    ViewData["Title"] = "Satışlarım";
+
+    int adetToplam = ViewBag.AdetToplam ?? 0;
+    int adetBeklemede = ViewBag.AdetBeklemede ?? 0;
+    int adetOnaylandi = ViewBag.AdetOnaylandi ?? 0;
+    int adetKargolandi = ViewBag.AdetKargolandi ?? 0;   // << dikkat: 'i' değil 'i' siz
+    int adetTamamlandi = ViewBag.AdetTamamlandi ?? 0;
+
+    var musteriMap = ViewBag.Musteriler as Dictionary<string, string> ?? new();
+}
+<!-- Ödeme Uyarı Banner -->
+<div class="odeme-banner">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    Ödemeler her Ayın <strong>"birinde"</strong> yapılmaktadır.
+</div>
+<link rel="stylesheet" href="~/css/site.css" />
+
+<div class="container my-3">
+    <h2 class="mb-3">Satışlarım</h2>
+
+    <!-- Özet Kartları -->
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm rounded-4 border-0">
+                <div class="card-body">
+                    <div class="small text-muted">Toplam</div><div class="h5 fw-bold">@adetToplam</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm rounded-4 border-0">
+                <div class="card-body">
+                    <div class="small text-muted">Beklemede</div><div class="h5 fw-bold">@adetBeklemede</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm rounded-4 border-0">
+                <div class="card-body">
+                    <div class="small text-muted">Onaylandı</div><div class="h5 fw-bold">@adetOnaylandi</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm rounded-4 border-0">
+                <div class="card-body">
+                    <div class="small text-muted">Kargolandı</div><div class="h5 fw-bold">@adetKargolandi</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Durum Filtresi -->
+    <div class="d-flex gap-2 flex-wrap mb-3">
+        <button class="btn btn-outline-secondary btn-sm active" data-status="all" onclick="filterStatus(this)">Tümü</button>
+        <button class="btn btn-outline-secondary btn-sm" data-status="Beklemede" onclick="filterStatus(this)">Beklemede (@adetBeklemede)</button>
+        <button class="btn btn-outline-secondary btn-sm" data-status="Onaylandı" onclick="filterStatus(this)">Onaylandı (@adetOnaylandi)</button>
+        <button class="btn btn-outline-secondary btn-sm" data-status="Kargolandı" onclick="filterStatus(this)">Kargolandı (@adetKargolandi)</button>
+        <button class="btn btn-outline-secondary btn-sm" data-status="Tamamlandı" onclick="filterStatus(this)">Tamamlandı (@adetTamamlandi)</button>
+    </div>
+
+    <!-- Satış Listesi -->
+    <div class="list-group shadow-sm rounded-4">
+        @foreach (var k in Model)
+        {
+            var durum = k.Siparis?.Durum ?? "";
+            var musteri = (k.Siparis?.IdentityUserId != null && (musteriMap?.ContainsKey(k.Siparis.IdentityUserId) ?? false))
+            ? musteriMap[k.Siparis.IdentityUserId]
+            : "Müşteri";
+
+            <div class="list-group-item list-group-item-action p-3 status-@durum.Replace(" ", "")" data-status="@durum">
+                <div class="d-flex align-items-start justify-content-between gap-3">
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold">@k.Urun?.Ad</div>
+                        <div class="small text-muted">
+                            <span class="me-2">Sipariş #@k.SiparisId</span>
+                            <span class="me-2">Müşteri: @musteri</span>
+                            <span>Tarih: @k.Siparis?.SiparisTarihi.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                        <div class="mt-1">
+                            <span class="badge bg-light text-dark border me-1">Durum: @durum</span>
+                            <span class="badge bg-primary-subtle text-primary me-1">Adet: @k.Miktar</span>
+                            <span class="badge bg-success-subtle text-success">Tutar: @((k.BirimFiyat * k.Miktar).ToString("N2")) ₺</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="collapse mt-2" id="d@k.Id">
+                    <div class="card card-body border-0 bg-light rounded-3">
+                        <div class="row g-2">
+                            <div class="col-6 col-md-3">
+                                <div class="small text-muted">Birim Fiyat</div>
+                                <div class="fw-semibold">@k.BirimFiyat.ToString("N2") ₺</div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="small text-muted">Ara Toplam</div>
+                                <div class="fw-semibold">@((k.BirimFiyat * k.Miktar).ToString("N2")) ₺</div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="small text-muted">Satıcı Payı</div>
+                                <div class="fw-semibold">@(((k.Urun?.SaticiTeklifFiyati ?? 0m) * k.Miktar).ToString("N2")) ₺</div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="small text-muted">Adres</div>
+                                <div class="fw-semibold text-truncate" style="max-width:220px;">
+                                    @{
+                                        // Adresi güvenli şekilde yazdır (nullable uyumlu)
+                                        var adr = k.Siparis?.Adres;
+                                        string? adrText = null;
+                                        if (adr != null)
+                                        {
+                                            var t = adr.GetType();
+                                            string? pick(string name)
+                                            {
+                                                var p = t.GetProperty(name);
+                                                var v = p?.GetValue(adr)?.ToString();
+                                                return string.IsNullOrWhiteSpace(v) ? null : v;
+                                            }
+
+                                            adrText = pick("AcikAdres")
+                                            ?? pick("Adres")
+                                            ?? pick("AdresMetni")
+                                            ?? pick("TamAdres")
+                                            ?? pick("Satir1")
+                                            ?? pick("Baslik")
+                                            ?? adr.ToString();
+                                        }
+                                    }
+                                    @((adrText ?? "—"))
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        }
+
+        @if (!Model.Any())
+        {
+            <div class="list-group-item text-center text-muted py-4">Kayıt yok.</div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterStatus(btn){
+            document.querySelectorAll('[data-status]').forEach(el => {
+                if(el.classList.contains('btn')) el.classList.remove('active');
+            });
+            btn.classList.add('active');
+            const st = btn.getAttribute('data-status');
+            document.querySelectorAll('.list-group .list-group-item').forEach(row => {
+                const rs = row.getAttribute('data-status');
+                if(st === 'all' || rs === st){ row.classList.remove('d-none'); }
+                else { row.classList.add('d-none'); }
+            });
+        }
+    </script>
+}

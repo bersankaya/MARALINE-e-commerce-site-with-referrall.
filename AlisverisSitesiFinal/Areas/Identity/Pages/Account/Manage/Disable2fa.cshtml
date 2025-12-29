@@ -1,0 +1,117 @@
+﻿@page
+@model Disable2faModel
+@{
+    ViewData["Title"] = "İki Aşamalı Doğrulamayı (2FA) Devre Dışı Bırak";
+    ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
+}
+
+<partial name="_StatusMessage" for="StatusMessage" />
+
+<div class="container py-3 py-md-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+
+            <div class="card border-0 shadow-sm" style="border-radius:1rem;">
+                <div class="card-body p-4 p-md-5">
+
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width:52px;height:52px;background:#f8d7da;">
+                            <!-- Basit kilit-off simgesi (SVG) -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="#842029" viewBox="0 0 16 16" aria-hidden="true">
+                                <path d="M11 1a2 2 0 0 1 2 2v4H9V6H8V3a2 2 0 0 1 2-2h1z" />
+                                <path d="M4.5 8A1.5 1.5 0 0 0 3 9.5v4A1.5 1.5 0 0 0 4.5 15h7A1.5 1.5 0 0 0 13 13.5v-4A1.5 1.5 0 0 0 11.5 8h-7zM8 10a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 8 10z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="h4 mb-0">@ViewData["Title"]</h1>
+                            <div class="text-muted small">Hesap güvenliği • 2FA yönetimi</div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning d-flex align-items-start gap-2" role="alert">
+                        <span class="mt-1" aria-hidden="true">⚠️</span>
+                        <div>
+                            <p class="mb-1"><strong>Bu işlem yalnızca 2FA’yı devre dışı bırakır.</strong></p>
+                            <p class="mb-0">
+                                2FA’yı devre dışı bırakmak, kimlik doğrulayıcı uygulamalarda kullanılan anahtarlarınızı
+                                otomatik olarak değiştirmez. Kimlik doğrulayıcı uygulamasında kullanılan anahtarı
+                                yenilemek isterseniz
+                                <a asp-page="./ResetAuthenticator" class="alert-link">kimlik doğrulayıcı anahtarlarınızı sıfırlayın</a>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <ul class="mb-4 text-muted small ps-3">
+                        <li>2FA’yı devre dışı bıraktığınızda girişlerde yalnızca şifreniz istenir.</li>
+                        <li>Güvenlik için işlem sonrası 2FA’yı yeniden etkinleştirmenizi öneririz.</li>
+                    </ul>
+
+                    <form id="disable-2fa-form" method="post" class="mt-3">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirmCheck" />
+                            <label class="form-check-label" for="confirmCheck">
+                                Bu işlemin güvenliğimi azaltabileceğini anladım.
+                            </label>
+                        </div>
+
+                        <div class="d-flex flex-column flex-md-row gap-2">
+                            <!-- Modal’ı açan buton -->
+                            <button type="button"
+                                    id="openConfirmModal"
+                                    class="btn btn-danger btn-lg px-4"
+                                    disabled
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#confirmModal">
+                                2FA’yı Devre Dışı Bırak
+                            </button>
+
+                            <a asp-page="./TwoFactorAuthentication" class="btn btn-outline-secondary btn-lg px-4">
+                                Vazgeç
+                            </a>
+                        </div>
+
+                        <!-- Onay Modalı -->
+                        <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content" style="border-radius:.8rem;">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="confirmModalLabel">İşlemi Onaylayın</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        2FA’yı devre dışı bırakmak istediğinizden emin misiniz?
+                                        Bu işlem sonra girişlerde iki adımlı doğrulama istenmeyecek.
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                                        <!-- Gerçek POST submit -->
+                                        <button type="submit" class="btn btn-danger">Evet, devre dışı bırak</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const confirmCheck = document.getElementById('confirmCheck');
+            const openBtn = document.getElementById('openConfirmModal');
+
+            function toggleButton() {
+                openBtn.disabled = !confirmCheck.checked;
+            }
+
+            confirmCheck.addEventListener('change', toggleButton);
+            toggleButton();
+        })();
+    </script>
+}

@@ -1,0 +1,321 @@
+﻿@model List<AlisverisSitesiFinal.Models.BonusLog>
+@using System.Globalization
+@using System.Text.RegularExpressions
+
+@{
+    ViewData["Title"] = "Bonus Geçmişi";
+
+    decimal toplamKazanc = (ViewBag.ToplamKazanc as decimal?) ?? Model.Where(x => x.Tutar > 0).Sum(x => x.Tutar);
+    decimal toplamCekilen = (ViewBag.ToplamCekilen as decimal?) ?? Model.Where(x => x.Tutar < 0).Sum(x => Math.Abs(x.Tutar));
+    decimal guncelBakiye = (ViewBag.GuncelBakiye as decimal?) ?? toplamKazanc;
+    var tr = new CultureInfo("tr-TR");
+}
+
+@functions {
+    string CleanDesc(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return "";
+        var cleaned = s;
+        cleaned = Regex.Replace(cleaned, @"\b[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}\b", "", RegexOptions.CultureInvariant);
+        cleaned = Regex.Replace(cleaned, @"\s*[-–—]?\s*pair-\d+\b", "", RegexOptions.IgnoreCase);
+        cleaned = Regex.Replace(cleaned, @"\s*[-–—]\s*[-–—]\s*", " - ");
+        cleaned = Regex.Replace(cleaned, @"\s{2,}", " ").Trim();
+        cleaned = Regex.Replace(cleaned, @"^\s*[-–—]\s*|\s*[-–—]\s*$", "");
+        return cleaned.Trim();
+    }
+}
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="mb-0 text-dark fw-semibold">
+            <i class="bi bi-cash-coin text-warning"></i> Bonus Kazanç Geçmişiniz
+        </h2>
+        <div>
+            <a asp-controller="ParaCekme" asp-action="Create" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-bank"></i> Yeni Para Çekme Talebi
+            </a>
+        </div>
+    </div>
+
+    <!-- Özet Kartları -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-secondary small">Toplam Kazanılan</div>
+                        <div class="h4 mb-0 fw-bold">@toplamKazanc.ToString("C", tr)</div>
+                    </div>
+                    <div class="rounded-circle bg-success-subtle p-3">
+                        <i class="bi bi-graph-up-arrow fs-4 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-secondary small">Toplam Çekilen</div>
+                        <div class="h4 mb-0 fw-bold">@toplamCekilen.ToString("C", tr)</div>
+                    </div>
+                    <div class="rounded-circle bg-danger-subtle p-3">
+                        <i class="bi bi-cash-stack fs-4 text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-secondary small">Güncel Bakiye</div>
+                        <div class="h4 mb-0 fw-bold">@guncelBakiye.ToString("C", tr)</div>
+                    </div>
+                    <div class="rounded-circle bg-warning-subtle p-3">
+                        <i class="bi bi-wallet2 fs-4 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtre Alanı -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-3">
+                    <label class="form-label small text-secondary">Başlangıç Tarihi</label>
+                    <input type="date" id="filterFrom" class="form-control" />
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label small text-secondary">Bitiş Tarihi</label>
+                    <input type="date" id="filterTo" class="form-control" />
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label small text-secondary">Min Tutar</label>
+                    <input type="number" step="0.01" id="filterMin" class="form-control" placeholder="0" />
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label small text-secondary">Max Tutar</label>
+                    <input type="number" step="0.01" id="filterMax" class="form-control" placeholder="999999" />
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label small text-secondary">Tür</label>
+                    <select id="filterType" class="form-select">
+                        <option value="all" selected>Tümü</option>
+                        <option value="kazanc">Kazanç</option>
+                        <option value="cekim">Çekim</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label small text-secondary">Açıklama Ara</label>
+                    <input type="text" id="filterSearch" class="form-control" placeholder="Açıklamada ara..." />
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label small text-secondary">Sırala</label>
+                    <select id="sortSelect" class="form-select">
+                        <option value="date_desc" selected>Tarih (Yeni → Eski)</option>
+                        <option value="date_asc">Tarih (Eski → Yeni)</option>
+                        <option value="amount_desc">Tutar (Büyük → Küçük)</option>
+                        <option value="amount_asc">Tutar (Küçük → Büyük)</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button id="btnReset" class="btn btn-outline-secondary w-50">
+                        <i class="bi bi-arrow-counterclockwise"></i> Sıfırla
+                    </button>
+                    <button id="btnExport" class="btn btn-outline-success w-50">
+                        <i class="bi bi-download"></i> CSV Dışa Aktar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tablo ve özet -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="small text-secondary">
+            <span id="rowCount">@Model.Count</span> kayıt
+            <span class="ms-2">| Filtre Toplamı: <strong id="filteredTotal">@Model.Sum(x => x.Tutar).ToString("C", tr)</strong></span>
+        </div>
+        <div class="small">
+            <span class="badge bg-success-subtle text-success border border-success-subtle">Kazanç</span>
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Çekim</span>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info shadow-sm">Henüz herhangi bir bonus kazancınız bulunmamaktadır.</div>
+    }
+    else
+    {
+        <div class="table-responsive shadow-sm rounded-3">
+            <table id="bonusTable" class="table table-hover align-middle mb-0 bonus-table">
+                <thead class="table-dark sticky-top">
+                    <tr>
+                        <th scope="col">Kazanç Tarihi</th>
+                        <th scope="col">Tutar</th>
+                        <th scope="col">Tür</th>
+                        <th scope="col">Açıklama</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var bonus in Model.OrderByDescending(b => b.Tarih))
+                    {
+                        var tur = bonus.Tutar >= 0 ? "kazanc" : "cekim";
+                        var temizAciklama = CleanDesc(bonus.Aciklama);
+
+                        <tr data-date="@bonus.Tarih.ToString("yyyy-MM-dd")"
+                            data-amount="@bonus.Tutar"
+                            data-type="@tur"
+                            data-text="@temizAciklama.ToLower(tr)">
+                            <td class="text-nowrap">@bonus.Tarih.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td class="fw-semibold @(bonus.Tutar >= 0 ? "text-success" : "text-danger")">
+                                @bonus.Tutar.ToString("C", tr)
+                            </td>
+                            <td>
+                                @if (bonus.Tutar >= 0)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-graph-up-arrow"></i> Kazanç
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                        <i class="bi bi-cash-stack"></i> Çekim
+                                    </span>
+                                }
+                            </td>
+                            <td>@temizAciklama</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const trFormatter = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
+
+            const table = document.getElementById('bonusTable');
+            if (!table) return;
+
+            const rows = Array.from(table.querySelectorAll('tbody tr'));
+            const from = document.getElementById('filterFrom');
+            const to = document.getElementById('filterTo');
+            const min = document.getElementById('filterMin');
+            const max = document.getElementById('filterMax');
+            const type = document.getElementById('filterType');
+            const search = document.getElementById('filterSearch');
+            const sortSelect = document.getElementById('sortSelect');
+            const rowCount = document.getElementById('rowCount');
+            const filteredTotal = document.getElementById('filteredTotal');
+            const btnReset = document.getElementById('btnReset');
+            const btnExport = document.getElementById('btnExport');
+
+            function applyFilters() {
+                const fromVal = from.value ? new Date(from.value) : null;
+                const toVal = to.value ? new Date(to.value) : null;
+                const minVal = min.value ? parseFloat(min.value) : null;
+                const maxVal = max.value ? parseFloat(max.value) : null;
+                const typeVal = type.value;
+                const q = (search.value || '').trim().toLocaleLowerCase('tr-TR');
+
+                let total = 0;
+                let visibleCount = 0;
+
+                rows.forEach(r => {
+                    const rDateStr = r.dataset.date;
+                    const rDate = rDateStr ? new Date(rDateStr) : null;
+                    const rAmount = parseFloat(r.dataset.amount);
+                    const rType = r.dataset.type;
+                    const rText = r.dataset.text || '';
+
+                    let ok = true;
+
+                    if (fromVal && rDate && rDate < fromVal) ok = false;
+                    if (toVal && rDate && rDate > new Date(toVal.getFullYear(), toVal.getMonth(), toVal.getDate(), 23, 59, 59)) ok = false;
+                    if (minVal !== null && rAmount < minVal) ok = false;
+                    if (maxVal !== null && rAmount > maxVal) ok = false;
+                    if (typeVal !== 'all' && rType !== typeVal) ok = false;
+                    if (q && !rText.toLocaleLowerCase('tr-TR').includes(q)) ok = false;
+
+                    r.style.display = ok ? '' : 'none';
+
+                    if (ok) {
+                        total += rAmount;
+                        visibleCount++;
+                    }
+                });
+
+                rowCount.textContent = visibleCount.toString();
+                filteredTotal.textContent = trFormatter.format(total);
+            }
+
+            function applySort() {
+                const [field, dir] = sortSelect.value.split('_');
+                const tbody = table.querySelector('tbody');
+                const sorted = rows.slice().sort((a, b) => {
+                    if (field === 'date') {
+                        const da = new Date(a.dataset.date);
+                        const db = new Date(b.dataset.date);
+                        return (dir === 'asc' ? da - db : db - da);
+                    } else {
+                        const aa = parseFloat(a.dataset.amount);
+                        const ab = parseFloat(b.dataset.amount);
+                        return (dir === 'asc' ? aa - ab : ab - aa);
+                    }
+                });
+                sorted.forEach(r => tbody.appendChild(r));
+            }
+
+            function resetFilters() {
+                [from, to, min, max, search].forEach(i => i.value = '');
+                type.value = 'all';
+                sortSelect.value = 'date_desc';
+                applySort();
+                applyFilters();
+            }
+
+            function exportCSV() {
+                const headers = ['Tarih', 'Tutar', 'Tür', 'Açıklama'];
+                const visibleRows = rows.filter(r => r.style.display !== 'none');
+                const lines = [headers.join(';')];
+
+                visibleRows.forEach(r => {
+                    const cols = r.querySelectorAll('td');
+                    const tarih = cols[0].innerText.replace(/\s+/g, ' ').trim();
+                    const tutarText = cols[1].innerText.replace(/\./g, '').replace(/\s/g, '').replace('₺', '').replace(',', '.');
+                    const tur = r.dataset.type === 'kazanc' ? 'Kazanç' : 'Çekim';
+                    const aciklama = (cols[3].innerText || '').replace(/[\r\n]+/g, ' ').trim();
+
+                    lines.push([tarih, tutarText, tur, `"${aciklama.replace(/"/g, '""')}"`].join(';'));
+                });
+
+                const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `bonus-gecmisi-${new Date().toISOString().slice(0,10)}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            [from, to, min, max, type, search].forEach(i => i.addEventListener('input', applyFilters));
+            sortSelect.addEventListener('change', () => { applySort(); applyFilters(); });
+            btnReset.addEventListener('click', (e) => { e.preventDefault(); resetFilters(); });
+            btnExport.addEventListener('click', (e) => { e.preventDefault(); exportCSV(); });
+
+            applySort();
+            applyFilters();
+        })();
+    </script>
+}
+

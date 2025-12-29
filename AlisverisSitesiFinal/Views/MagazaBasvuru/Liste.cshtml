@@ -1,0 +1,238 @@
+﻿@using System.Globalization
+@model IEnumerable<object>  
+
+@{
+    ViewData["Title"] = "Mağaza Başvuruları";
+    var tr = new CultureInfo("tr-TR");
+
+    // ---- Yardımcılar: property isimleri farklı olsa da okuyabilmek için ----
+    string P(object o, params string[] names)
+    {
+        if (o is null) return "";
+        var t = o.GetType();
+        foreach (var n in names)
+        {
+            var prop = t.GetProperty(n);
+            if (prop != null)
+            {
+                var v = prop.GetValue(o);
+                return v?.ToString() ?? "";
+            }
+        }
+        return "";
+    }
+    string D(object o, params string[] names)
+    {
+        if (o is null) return "";
+        var t = o.GetType();
+        foreach (var n in names)
+        {
+            var prop = t.GetProperty(n);
+            if (prop != null)
+            {
+                var v = prop.GetValue(o);
+                if (v is DateTime dt) return dt.ToString("dd.MM.yyyy HH:mm", tr);
+                if (v is DateTimeOffset dto) return dto.LocalDateTime.ToString("dd.MM.yyyy HH:mm", tr);
+                return v?.ToString() ?? "";
+            }
+        }
+        return "";
+    }
+    string Badge(string durum) => durum switch
+    {
+        "Beklemede"  => "badge bg-warning text-dark",
+        "Onaylandı"  => "badge bg-success",
+        "Reddedildi" => "badge bg-danger",
+        _            => "badge bg-secondary"
+    };
+    bool Locked(string durum) => durum == "Onaylandı" || durum == "Reddedildi";
+}
+
+<div class="container my-4">
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Mağaza Başvuruları</h2>
+
+        <form method="get" class="d-flex gap-2" role="search">
+            <input name="q" value="@Context.Request.Query["q"]" class="form-control" style="min-width:220px" placeholder="Mağaza / Başvuran ara..." />
+            @{
+                var durumQ = (string?)Context.Request.Query["durum"] ?? "";
+            }
+            <select name="durum" class="form-select">
+                <option value="" selected="@string.IsNullOrEmpty(durumQ)">Tümü</option>
+                <option value="Beklemede" selected="@(durumQ=="Beklemede")">Beklemede</option>
+                <option value="Onaylandı" selected="@(durumQ=="Onaylandı")">Onaylandı</option>
+                <option value="Reddedildi" selected="@(durumQ=="Reddedildi")">Reddedildi</option>
+            </select>
+            <button class="btn btn-outline-secondary">Ara</button>
+        </form>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    { <div class="alert alert-success rounded-4">@TempData["SuccessMessage"]</div> }
+    @if (TempData["ErrorMessage"] != null)
+    { <div class="alert alert-danger rounded-4">@TempData["ErrorMessage"]</div> }
+
+    @if (Model == null || !Model.Cast<object>().Any())
+    {
+        <div class="alert alert-info rounded-4">Gösterilecek başvuru yok.</div>
+    }
+    else
+    {
+        <!-- =================== MASAÜSTÜ: TABLO =================== -->
+        <div class="table-responsive d-none d-md-block">
+            <table class="table align-middle table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Tarih</th>
+                        <th>Mağaza</th>
+                        <th>Başvuran</th>
+                        <th>Durum</th>
+                        <th class="text-end">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var x in Model)
+                {
+                    var id      = P(x, "Id","ID");
+                    var tarih   = D(x, "BasvuruTarihi","OlusturmaTarihi","CreatedAt","Tarih");
+                    var magaza  = P(x, "MagazaAdi","MagazaAd","StoreName");
+                    var durum   = P(x, "Durum","Status");
+                    var aciklama= P(x, "Aciklama","Not");
+
+                    var kul     = x.GetType().GetProperty("Kullanici")?.GetValue(x);
+                    var kisi    = (P(kul??new object(), "Ad","FirstName") + " " + P(kul??new object(), "Soyad","LastName")).Trim();
+                    if (string.IsNullOrWhiteSpace(kisi)) kisi = P(x, "BasvuranAdSoyad","AdSoyad","FullName");
+                    var email   = !string.IsNullOrWhiteSpace(P(x, "Email","Eposta")) ? P(x, "Email","Eposta") : P(kul??new object(), "Email");
+
+                    bool kilit  = Locked(durum);
+                    var collapseId = $"rej-{id}";
+
+                    <tr>
+                        <td class="text-muted">#@id</td>
+                        <td>@tarih</td>
+                        <td class="fw-semibold">@magaza</td>
+                        <td>
+                            <div class="fw-semibold">@(!string.IsNullOrWhiteSpace(kisi) ? kisi : "—")</div>
+                            @if(!string.IsNullOrWhiteSpace(email)){ <div class="small text-muted">@email</div> }
+                        </td>
+                        <td><span class="@Badge(durum)">@(!string.IsNullOrWhiteSpace(durum) ? durum : "—")</span></td>
+                        <td class="text-end text-nowrap">
+                            @if (!kilit)
+                            {
+                                <form asp-controller="MagazaBasvuru" asp-action="Onayla" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@id" />
+                                    <button class="btn btn-sm btn-outline-success">Onayla</button>
+                                </form>
+
+                                <button class="btn btn-sm btn-outline-danger ms-1" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false">
+                                    Reddet
+                                </button>
+                            }
+                            else
+                            {
+                                <span class="small text-muted"><i class="bi bi-lock"></i> İşlem kilitli</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr class="collapse" id="@collapseId">
+                        <td colspan="6">
+                            <form asp-controller="MagazaBasvuru" asp-action="Reddet" method="post" class="d-flex gap-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@id" />
+                                <input name="neden" class="form-control" placeholder="Reddetme nedeni (opsiyonel)" />
+                                <button class="btn btn-danger">Reddet</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- =================== MOBİL: KLASÖR / ACCORDION =================== -->
+        <div class="accordion accordion-flush d-md-none" id="mb-acc">
+            @foreach (var x in Model)
+            {
+                var id      = P(x, "Id","ID");
+                var tarih   = D(x, "BasvuruTarihi","OlusturmaTarihi","CreatedAt","Tarih");
+                var magaza  = P(x, "MagazaAdi","MagazaAd","StoreName");
+                var durum   = P(x, "Durum","Status");
+                var aciklama= P(x, "Aciklama","Not");
+
+                var kul     = x.GetType().GetProperty("Kullanici")?.GetValue(x);
+                var kisi    = (P(kul??new object(), "Ad","FirstName") + " " + P(kul??new object(), "Soyad","LastName")).Trim();
+                if (string.IsNullOrWhiteSpace(kisi)) kisi = P(x, "BasvuranAdSoyad","AdSoyad","FullName");
+                var email   = !string.IsNullOrWhiteSpace(P(x, "Email","Eposta")) ? P(x, "Email","Eposta") : P(kul??new object(), "Email");
+
+                bool kilit  = Locked(durum);
+                var itemId  = $"acc-{id}";
+                var rejId   = $"rejm-{id}";
+
+                <div class="accordion-item rounded-4 shadow-sm mb-2 overflow-hidden">
+                    <h2 class="accordion-header" id="h-@itemId">
+                        <button class="accordion-button collapsed d-flex justify-content-between" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#@itemId" aria-expanded="false"
+                                aria-controls="@itemId">
+                            <span class="fw-semibold">@(!string.IsNullOrWhiteSpace(magaza) ? magaza : "Mağaza")</span>
+                            <span class="@Badge(durum) ms-2">@(!string.IsNullOrWhiteSpace(durum) ? durum : "—")</span>
+                        </button>
+                    </h2>
+                    <div id="@itemId" class="accordion-collapse collapse" aria-labelledby="h-@itemId" data-bs-parent="#mb-acc">
+                        <div class="accordion-body">
+                            <div class="small text-muted">@tarih</div>
+
+                            <div class="mt-2">
+                                <div class="small text-muted">Başvuran</div>
+                                <div class="small fw-semibold">@(!string.IsNullOrWhiteSpace(kisi) ? kisi : "—")</div>
+                                @if(!string.IsNullOrWhiteSpace(email)){ <div class="small text-muted">@email</div> }
+                            </div>
+
+                            @if(!string.IsNullOrWhiteSpace(aciklama))
+                            {
+                                <div class="mt-2 small">
+                                    <div class="text-muted">Açıklama</div>
+                                    <div>@aciklama</div>
+                                </div>
+                            }
+
+                            <div class="mt-3 d-flex flex-column gap-2">
+                                @if (!kilit)
+                                {
+                                    <form asp-controller="MagazaBasvuru" asp-action="Onayla" method="post" class="w-100">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@id" />
+                                        <button class="btn btn-outline-success w-100">Onayla</button>
+                                    </form>
+
+                                    <button class="btn btn-outline-danger w-100" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#@rejId" aria-expanded="false">
+                                        Reddet
+                                    </button>
+                                    <div class="collapse" id="@rejId">
+                                        <form asp-controller="MagazaBasvuru" asp-action="Reddet" method="post" class="d-flex flex-column gap-2 mt-2">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@id" />
+                                            <textarea name="neden" class="form-control" rows="2" placeholder="Reddetme nedeni (opsiyonel)"></textarea>
+                                            <button class="btn btn-danger">Reddet</button>
+                                        </form>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="small text-muted"><i class="bi bi-lock"></i> İşlem kilitli</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts{
+    <partial name="_ValidationScriptsPartial" />
+}

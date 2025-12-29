@@ -1,0 +1,160 @@
+﻿@{
+    Layout = "_Layout";
+    var token = (string)ViewBag.IframeToken;
+}
+
+<section class="container py-3">
+    <iframe src="https://www.paytr.com/odeme/guvenli/@token" 
+            id="paytriframe"
+            frameborder="0"
+            scrolling="yes"                
+            allowtransparency="true"
+            style="width:100%; display:block; border:0; border-radius:.5rem;"></iframe>
+</section>
+
+<!-- Banka/ödeme görselleri – mobilde yatay kaydırmalı, masaüstünde taşmadan görünür -->
+<section class="container pb-6">
+    <div class="brand-strip" aria-label="Ödeme altyapısı ve anlaşmalı bankalar">
+        <img src="/images/paytr/bankalar.jpg" alt="Bankalar" loading="lazy" decoding="async" />
+        <img src="/images/paytr/odeme.jpg" alt="Ödeme Yöntemleri" loading="lazy" decoding="async" />
+        <img src="/images/paytr/paytr.jpg" alt="PayTR" loading="lazy" decoding="async" />
+    </div>
+</section>
+
+<style>
+    /* Görsel şerit: yatay kaydırma + tutarlı yükseklik */
+    .brand-strip {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 8px 10px;
+        border: 1px solid rgba(0,0,0,.06);
+        border-radius: 12px;
+        background: #fff;
+    }
+
+        .brand-strip::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .brand-strip::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,.15);
+            border-radius: 999px;
+        }
+
+    .brand-strip {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0,0,0,.15) transparent;
+    }
+
+        .brand-strip img {
+            flex: 0 0 auto;
+            height: 38px;
+            width: auto;
+            object-fit: contain;
+            border-radius: 8px;
+            user-select: none;
+            -webkit-user-drag: none;
+            box-shadow: 0 0 0 1px rgba(0,0,0,.03);
+        }
+    /* Daha geniş ekranlarda biraz büyüt */
+    @@media (min-width:640px) {
+        .brand-strip img {
+            height: 44px;
+        }
+    }
+
+    @@media (min-width:1024px) {
+        .brand-strip img {
+            height: 52px;
+        }
+    }
+
+    /* Güvenli başlangıç yüksekliği – JS bunu güncelleyecek */
+    #paytriframe {
+        min-height: 1100px;
+    }
+</style>
+
+<script>
+    /* PayTR IFrame yüksekliği yöneti mi:
+       - Header/kategori yüksekliğini ölç → 100vh - offset kadar min-yükseklik
+       - PayTR postMessage (paytrIframeHeight) gelirse kullan
+       - Gelmezse periyodik fallback ile görünür alanın altına sarkacak kadar uzat
+    */
+    (function () {
+        var iframe = document.getElementById("paytriframe");
+        if (!iframe) return;
+
+        var gotPostMessage = false;
+        var lastSet = 0;
+        var SAFE_MIN = 1100; // başlangıç güvenli alt sınır
+
+        function getHeaderOffset() {
+            var nb = document.querySelector('.navbar');
+            var kb = document.querySelector('.kategori-bar');
+            var alert = document.querySelector('.alert'); // bazen üstte uyarı şeridi oluyor
+            var navH = nb ? nb.offsetHeight : 64;
+            var catH = kb ? kb.offsetHeight : 0;
+            var alH  = alert ? alert.offsetHeight : 0;
+            return (navH + catH + alH + 16); // 16px güvenlik payı
+        }
+
+        function setMinByViewport() {
+            var offset = getHeaderOffset();
+            var vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+            var targetMin = Math.max(SAFE_MIN, vh - offset + 400); // görünür alanın ötesine taşı
+            iframe.style.minHeight = targetMin + "px";
+            if (lastSet < targetMin) { iframe.style.height = targetMin + "px"; lastSet = targetMin; }
+        }
+
+        function applyHeight(h) {
+            if (!h || isNaN(h)) return;
+            var offset = getHeaderOffset();
+            var vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+            var minVisible = Math.max(SAFE_MIN, vh - offset + 200);
+            var finalH = Math.max(h, minVisible);
+            if (Math.abs(finalH - lastSet) > 10) {
+                iframe.style.height = finalH + "px";
+                lastSet = finalH;
+            }
+        }
+
+        // PayTR mesajlarını yakala
+        window.addEventListener("message", function (e) {
+            if (!e || typeof e.data === "undefined") return;
+            var data = e.data;
+            var evt = data && (data.event || (data.paytrIframeHeight ? "paytrIframeHeight" : null));
+            if (evt === "paytrIframeHeight") {
+                var h = parseInt(data.height || data.paytrIframeHeight || 0);
+                if (!isNaN(h) && h > 200) { gotPostMessage = true; applyHeight(h); }
+            } else if (typeof data === "string" && /^\d{3,5}$/.test(data)) {
+                var hs = parseInt(data);
+                if (!isNaN(hs)) { gotPostMessage = true; applyHeight(hs); }
+            }
+        });
+
+        // Başlangıç: görünür alanı baz al
+        setMinByViewport();
+
+        // 1) 1 sn içinde mesaj yoksa bir kez daha yükselt
+        setTimeout(function () {
+            if (!gotPostMessage) setMinByViewport();
+        }, 1000);
+
+        // 2) İlk 8 saniye boyunca 800ms’de bir fallback – kullanıcı formu açtıkça kesilmesin
+        var t0 = Date.now();
+        var timer = setInterval(function () {
+            if (Date.now() - t0 > 8000) { clearInterval(timer); return; }
+            if (!gotPostMessage) setMinByViewport();
+        }, 800);
+
+        // 3) Yüklendiğinde ve yön/resize olduğunda yeniden hesapla
+        iframe.addEventListener('load', setMinByViewport);
+        window.addEventListener('resize', setMinByViewport);
+        window.addEventListener('orientationchange', function(){ setTimeout(setMinByViewport, 300); });
+
+    })();
+</script>

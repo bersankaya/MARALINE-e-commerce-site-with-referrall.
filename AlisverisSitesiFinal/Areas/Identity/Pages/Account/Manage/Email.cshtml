@@ -1,0 +1,117 @@
+﻿@page
+@model EmailModel
+@{
+    ViewData["Title"] = "E-posta Yönetimi";
+    ViewData["ActivePage"] = ManageNavPages.Email;
+}
+
+<partial name="_StatusMessage" for="StatusMessage" />
+
+<div class="container py-3 py-md-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+
+            <div class="card border-0 shadow-sm" style="border-radius:1rem;">
+                <div class="card-body p-4 p-md-5">
+
+                    <!-- Başlık -->
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width:52px;height:52px;background:#e7f1ff;">
+                            <!-- Mail simgesi -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="#0d6efd" viewBox="0 0 16 16" aria-hidden="true">
+                                <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v.217L8 8.083.002 4.217 0 4z" />
+                                <path d="M0 6.383V12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6.383l-7.555 3.89a1 1 0 0 1-.89 0L0 6.383z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="h4 mb-0">@ViewData["Title"]</h1>
+                            <div class="text-muted small">Hesap güvenliği • E-posta doğrulama ve güncelleme</div>
+                        </div>
+                    </div>
+
+                    <!-- Bilgi kutusu -->
+                    <div class="alert alert-info d-flex align-items-start gap-2" role="alert">
+                        <span class="mt-1" aria-hidden="true">ℹ️</span>
+                        <div>
+                            Kayıtlı e-posta adresiniz giriş ve bildirimler için kullanılır. Yeni bir e-posta girerek değişiklik talebi oluşturabilirsiniz.
+                            Doğrulama adımını tamamlamadan bazı özellikler kısıtlanabilir.
+                        </div>
+                    </div>
+
+                    <form id="email-form" method="post" class="mt-3">
+                        <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+                        @if (Model.IsEmailConfirmed)
+                        {
+                            <!-- Doğrulanmış e-posta alanı -->
+                            <div class="mb-3">
+                                <label asp-for="Email" class="form-label fw-semibold">Kayıtlı E-posta</label>
+                                <div class="input-group">
+                                    <input asp-for="Email" class="form-control" placeholder="E-posta adresiniz" disabled />
+                                    <span class="input-group-text text-success" title="Doğrulandı" data-bs-toggle="tooltip">✓</span>
+                                </div>
+                                <div class="form-text">Bu e-posta adresi doğrulanmıştır.</div>
+                            </div>
+                        }
+                        else
+                        {
+                            <!-- Doğrulanmamış e-posta alanı + doğrulama gönder -->
+                            <div class="mb-3">
+                                <label asp-for="Email" class="form-label fw-semibold">Kayıtlı E-posta</label>
+                                <div class="input-group">
+                                    <input asp-for="Email" class="form-control" placeholder="E-posta adresiniz" disabled />
+                                    <button id="email-verification"
+                                            type="submit"
+                                            asp-page-handler="SendVerificationEmail"
+                                            class="btn btn-outline-primary">
+                                        Doğrulama E-postası Gönder
+                                    </button>
+                                </div>
+                                <div class="form-text text-warning">E-posta adresiniz henüz doğrulanmamış.</div>
+                            </div>
+                        }
+
+                        <!-- Yeni e-posta -->
+                        <div class="mb-3">
+                            <label asp-for="Input.NewEmail" class="form-label fw-semibold">Yeni E-posta</label>
+                            <input asp-for="Input.NewEmail"
+                                   class="form-control"
+                                   autocomplete="email"
+                                   aria-required="true"
+                                   placeholder="yeni@ornek.com" />
+                            <span asp-validation-for="Input.NewEmail" class="text-danger"></span>
+                            <div class="form-text">Değişikliği tamamlamak için size bir onay bağlantısı göndereceğiz.</div>
+                        </div>
+
+                        <!-- Aksiyonlar -->
+                        <div class="d-flex flex-column flex-md-row gap-2">
+                            <button id="change-email-button"
+                                    type="submit"
+                                    asp-page-handler="ChangeEmail"
+                                    class="btn btn-primary btn-lg px-4">
+                                E-posta Adresini Değiştir
+                            </button>
+
+                            <a asp-page="./Index" class="btn btn-outline-secondary btn-lg px-4">
+                                Hesap Ayarlarına Dön
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Bootstrap tooltip
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            new bootstrap.Tooltip(el);
+        });
+    </script>
+}

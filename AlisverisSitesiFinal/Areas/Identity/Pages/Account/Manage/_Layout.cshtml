@@ -1,0 +1,97 @@
+﻿@{
+    if (ViewData.TryGetValue("ParentLayout", out var parentLayout) && parentLayout != null)
+    {
+        Layout = parentLayout.ToString();
+    }
+    else
+    {
+        Layout = "/Areas/Identity/Pages/_Layout.cshtml";
+    }
+}
+
+<style>
+    /* Sayfa kabı */
+    .account-wrapper {
+        padding: 1.25rem 0 2rem;
+    }
+    @@media (min-width: 992px) {
+        .account-wrapper
+
+    {
+        padding-top: 2rem;
+    }
+
+    }
+
+    /* Başlık */
+    .account-title {
+        font-weight: 700;
+        letter-spacing: .2px;
+        margin-bottom: .25rem;
+    }
+
+    .account-subtitle {
+        color: #6b7280; /* slate-500 */
+        font-size: .95rem;
+        margin-bottom: 1.25rem;
+    }
+
+    /* Sol menü kutusu */
+    .account-sidenav {
+        background: #fff;
+        border: 1px solid #eef2f7;
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(17,24,39,.06);
+        padding: .75rem;
+        position: sticky;
+        top: 1rem;
+    }
+
+    /* Sağ içerik kartı */
+    .account-content {
+        background: #fff;
+        border: 1px solid #eef2f7;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(17,24,39,.06);
+        padding: 1.25rem;
+    }
+    @@media (min-width: 768px) {
+        .account-content
+
+    {
+        padding: 1.75rem;
+    }
+
+    }
+
+    /* Ayırıcı */
+    .soft-hr {
+        border: 0;
+        height: 1px;
+        background: linear-gradient(to right, transparent, #e8edf4, transparent);
+        margin: .75rem 0 1.25rem;
+    }
+</style>
+
+<div class="container account-wrapper">
+    <h2 class="account-title">Hesap Ayarları</h2>
+    <div class="account-subtitle">Bilgilerinizi güncelleyin, güvenlik seçeneklerinizi yönetin.</div>
+    <hr class="soft-hr" />
+
+    <div class="row g-3 g-lg-4">
+        <div class="col-md-4 col-lg-3">
+            <div class="account-sidenav">
+                <partial name="_ManageNav" />
+            </div>
+        </div>
+        <div class="col-md-8 col-lg-9">
+            <div class="account-content">
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @RenderSection("Scripts", required: false)
+}

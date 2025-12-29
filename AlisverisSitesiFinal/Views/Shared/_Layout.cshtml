@@ -1,0 +1,510 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using AlisverisSitesiFinal.Data
+@using AlisverisSitesiFinal.Models
+@inject UygulamaDbContext _context
+@inject SignInManager<Kullanici> SignInManager
+@inject UserManager<Kullanici> UserManager
+
+@{
+    var me = User.Identity?.IsAuthenticated == true
+        ? await UserManager.GetUserAsync(User)
+        : null;
+
+    var adSoyad = me != null ? $"{me.Ad} {me.Soyad}" : "";
+
+    bool isAdmin = User.IsInRole("Admin");
+    bool isSatici = User.IsInRole("Satici");
+    bool isAday = User.IsInRole("SaticiAday");
+
+    bool saticiModu = isSatici || isAday;
+
+    // UI için müşteri: Admin/Satici/SaticiAday DEĞİLSE
+    bool isCustomer = !isAdmin && !isSatici && !isAday;
+}
+
+
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Maraline</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="icon" type="image/x-icon" href="~/favicon4.ico" />
+
+    <!-- Mobil odaklı zarif dokunuşlar -->
+    <style>
+        /* Genel */
+        .z-top {
+            z-index: 1040;
+        }
+
+        .header-shadow {
+            box-shadow: 0 4px 14px rgba(0,0,0,.06);
+        }
+
+        .brand-logo {
+            height: 34px;
+            width: auto;
+        }
+
+        .brand-text {
+            font-weight: 700;
+            letter-spacing: .2px;
+            margin-left: .35rem;
+        }
+
+        .btn-chip {
+            border-radius: 999px;
+        }
+
+        .payment-logo {
+            height: 22px;
+            opacity: .9;
+        }
+
+        /* Arama */
+        .search-wrap {
+            min-width: 260px;
+        }
+
+        .search-pill {
+            border-radius: 999px;
+            padding-left: 1rem;
+        }
+
+        .search-icon-btn {
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+        }
+
+        /* Kategori bar */
+        .kategori-bar {
+            background: #fff;
+            border-top: 1px solid #f1f3f5;
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        .dropdown-menu-custom {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .nav-link-menu {
+            color: #222;
+            text-decoration: none;
+            margin-right: 1rem;
+            white-space: nowrap;
+        }
+
+            .nav-link-menu:hover {
+                color: #0a7a3d;
+            }
+
+        .cat-scroll {
+            display: flex;
+            gap: .5rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+            .cat-scroll::-webkit-scrollbar {
+                display: none;
+            }
+
+        .slogan-text {
+            color: #6c757d;
+            font-size: .9rem;
+        }
+
+        /* Admin menü */
+        .admin-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+        }
+
+        .brand-logo {
+            height: 30px;
+        }
+        /* ÖNEMLİ: Maraline yazısını mobilde de GÖSTER */
+        .brand-text {
+            display: inline;
+            font-size: 1rem;
+        }
+
+        .search-wrap {
+            display: none !important;
+        }
+        /* masaüstü arama gizlenir */
+        .mobile-tools {
+            gap: .35rem;
+        }
+
+        .payment-logo {
+            height: 18px;
+        }
+
+        /* Kategori satırı daha kompakt */
+        .kategori-bar .btn-chip {
+            padding: .375rem .7rem;
+        }
+
+        .nav-link-menu {
+            margin-right: .65rem;
+            font-size: .95rem;
+        }
+
+        /* Dropdown paddings */
+        .dropdown-menu {
+            border-radius: 14px;
+        }
+
+
+        .payment-logo {
+            height: 16px;
+        }
+
+    </style>
+</head>
+
+<body>
+   
+    <header class="sticky-top header-shadow bg-white">
+        <!-- NAVBAR -->
+        <nav class="navbar navbar-expand-lg navbar-custom z-top py-2">
+            <div class="container align-items-center">
+
+                <!-- Marka -->
+                <a class="navbar-brand d-inline-flex align-items-center"
+                   asp-controller="Home" asp-action="Index">
+                    <img src="~/images/logo3.png" asp-append-version="true" alt="Maraline" class="brand-logo" />
+                    <span class="brand-text">Maraline</span>
+                </a>
+
+                <!-- Masaüstü ARAMA -->
+                <form asp-controller="Uruns" asp-action="Index" method="get"
+                      class="flex-grow-1 me-3 search-wrap d-none d-lg-flex" style="margin:0;">
+                    <input type="text" name="arama" value="@Context.Request.Query["arama"]"
+                           class="form-control search-pill"
+                           placeholder="Ürün veya kategori ara..." />
+                </form>
+
+                <!-- Sağ aksiyonlar -->
+                <div class="d-flex align-items-center mobile-tools">
+
+                    <!-- Mobil: Arama aç/kapa -->
+                    <button class="btn btn-outline-success search-icon-btn d-lg-none"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#mobileSearch"
+                            aria-controls="mobileSearch" aria-expanded="false" aria-label="Arama">
+                        <i class="bi bi-search"></i>
+                    </button>
+
+                    @* Satıcı hızlı erişim *@
+                    @if (SignInManager.IsSignedIn(User) && isSatici)
+                    {
+                        <a class="btn btn-outline-success btn-sm btn-chip d-none d-lg-inline-flex"
+                           asp-controller="SaticiPanel" asp-action="Index">
+                            <i class="bi bi-shop me-1"></i> Satıcı Paneli
+                        </a>
+
+                        <!-- Mobil kısayol -->
+                        <a class="btn btn-outline-success search-icon-btn d-lg-none"
+                           asp-controller="SaticiPanel" asp-action="Index" title="Satıcı Paneli">
+                            <i class="bi bi-shop"></i>
+                        </a>
+                    }
+
+                    @* Admin mini yönetim *@
+                    @if (SignInManager.IsSignedIn(User) && isAdmin)
+                    {
+                        <div class="dropdown">
+                            <button type="button"
+                                    class="btn btn-outline-warning btn-sm btn-chip dropdown-toggle d-none d-lg-inline-flex"
+                                    data-bs-toggle="dropdown"
+                                    data-bs-auto-close="outside"
+                                    data-bs-display="static"
+                                    data-bs-boundary="window"
+                                    data-bs-offset="0,8"
+                                    aria-expanded="false">
+                                <i class="bi bi-gear-wide-connected me-1"></i> Yönetim
+                            </button>
+
+                            <!-- Mobil: sadece ikon -->
+                            <button type="button"
+                                    class="btn btn-outline-warning search-icon-btn d-lg-none"
+                                    data-bs-toggle="dropdown" aria-expanded="false" title="Yönetim">
+                                <i class="bi bi-gear-wide-connected"></i>
+                            </button>
+
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2 admin-menu">
+                                <li>
+                                    <a class="dropdown-item fw-semibold" href="/Admin">
+                                        <i class="bi bi-speedometer2"></i><span>Admin Paneli</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="AdminRapor" asp-action="Odemeler">
+                                        <i class="bi bi-graph-up-arrow"></i><span>Ödemeler Panosu</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="/AdminOdemeler/Index">
+                                        <i class="bi bi-cash-coin"></i> <span>Ödemeler / Dağıtım</span>
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" asp-controller="MagazaBasvuru" asp-action="Liste"><i class="bi bi-inboxes"></i><span>Başvurular</span></a></li>
+                                <li><a class="dropdown-item" asp-controller="AdminUrunOnay" asp-action="Bekleyenler"><i class="bi bi-bag-check"></i><span>Ürün Onayları</span></a></li>
+                                <li><a class="dropdown-item" asp-controller="AdminSatici" asp-action="Create"><i class="bi bi-person-plus"></i><span>Yeni Satıcı</span></a></li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="AdminSaticiOdeme" asp-action="Ozet">
+                                        <i class="bi bi-cash-coin"></i><span>Satıcı Ödemeleri</span>
+                                    </a>
+                                </li>
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="Siparis" asp-action="TumSiparisler">
+                                            <i class="bi bi-card-checklist"></i><span>Sipariş Yönetimi</span>
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    <!-- HESAP MENÜSÜ -->
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        <div class="dropdown">
+                            <button type="button"
+                                    id="accBtn"
+                                    class="btn btn-success btn-chip dropdown-toggle no-caret d-none d-lg-inline-flex"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                <i class="bi bi-person-circle me-1"></i> @adSoyad
+                            </button>
+
+                            <!-- Mobil: ikon buton -->
+                            <button type="button"
+                                    class="btn btn-success search-icon-btn d-lg-none"
+                                    data-bs-toggle="dropdown" aria-expanded="false" title="Hesabım">
+                                <i class="bi bi-person-circle"></i>
+                            </button>
+
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2" aria-labelledby="accBtn">
+                                <li><a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index"><i class="bi bi-person-gear me-2"></i>Hesap Ayarları</a></li>
+
+                                @if (!saticiModu)
+                                {
+                                    <li>
+                                        <a asp-controller="Adresler" asp-action="Index" class="dropdown-item">
+                                            <i class="bi bi-geo-alt-fill me-2"></i> Adreslerim
+                                        </a>
+                                    </li>
+
+                                    <li><a class="dropdown-item" href="/Siparis"><i class="bi bi-receipt me-2"></i>Siparişlerim</a></li>
+                                    <li><a class="dropdown-item" href="/ParaCekme/KullanicininTalepleri"><i class="bi bi-wallet2 me-2 text-success"></i>Para Çekme Taleplerim</a></li>
+                                    <li><a class="dropdown-item" href="/ParaCekme/Create"><i class="bi bi-plus-circle me-2 text-primary"></i>Yeni Para Çekme Talebi</a></li>
+                                    <li><a class="dropdown-item" asp-controller="BonusLog" asp-action="KullaniciBonusGecmisi"><i class="bi bi-coin me-2 text-warning"></i>Bonus Geçmişi</a></li>
+                                    <li><a class="dropdown-item" href="/ParaCekme/IBANGuncelle"><i class="bi bi-credit-card me-2 text-danger"></i>IBAN Güncelle</a></li>
+                                }
+
+                                <li><hr class="dropdown-divider" /></li>
+                                <li class="px-3 pb-2">
+                                    <form method="post" asp-area="Identity" asp-page="/Account/Logout">
+                                        <button type="submit" class="btn btn-outline-danger w-100 btn-sm">
+                                            <i class="bi bi-box-arrow-right me-1"></i> Çıkış Yap
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Masaüstü butonlar -->
+                        <a class="btn btn-outline-success btn-chip d-none d-lg-inline-flex" asp-area="Identity" asp-page="/Account/Login">Giriş Yap</a>
+                        <a class="btn btn-success btn-chip d-none d-lg-inline-flex" asp-area="Identity" asp-page="/Account/Register">Kayıt Ol</a>
+
+                        <!-- Mobil: ikonlar -->
+                        <a class="btn btn-outline-success search-icon-btn d-lg-none" asp-area="Identity" asp-page="/Account/Login" title="Giriş">
+                            <i class="bi bi-box-arrow-in-right"></i>
+                        </a>
+                        <a class="btn btn-success search-icon-btn d-lg-none" asp-area="Identity" asp-page="/Account/Register" title="Kayıt Ol">
+                            <i class="bi bi-person-plus"></i>
+                        </a>
+
+                       @*  <button type="button"
+                                class="btn btn-success btn-sm ms-2 rounded-pill shadow-sm d-none d-lg-inline-flex"
+                                onclick="window.MLN_OPEN_INTRO && window.MLN_OPEN_INTRO()">
+                            🌿 Hakkımızda
+                        </button> *@
+                    }
+                </div>
+            </div>
+
+            <!-- Mobil ARAMA alanı -->
+            <div class="container d-lg-none">
+                <div class="collapse mt-2" id="mobileSearch">
+                    <form asp-controller="Uruns" asp-action="Index" method="get" class="mb-2">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" name="arama" value="@Context.Request.Query["arama"]" class="form-control" placeholder="Ürün veya kategori ara..." />
+                            <button class="btn btn-success" type="submit">Ara</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </nav>
+
+        <!-- KATEGORİ ÇUBUĞU -->
+        <div class="kategori-bar">
+            <div class="container d-flex align-items-center justify-content-md-between flex-wrap gap-3 py-2">
+                <!-- Tüm Kategoriler Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-light text-success dropdown-toggle fw-semibold btn-chip" type="button"
+                            data-bs-toggle="dropdown" data-bs-offset="0,8">
+                        <i class="bi bi-list"></i> Tüm Kategoriler
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-custom">
+                        @foreach (var kategori in _context.Kategoriler.OrderBy(k => k.Ad).ToList())
+                        {
+                            <a class="dropdown-item" href="/Uruns?kategoriId=@kategori.Id">@kategori.Ad</a>
+                        }
+                    </div>
+                </div>
+
+                <!-- Orta menü -->
+                @if (!saticiModu)
+                {
+                    @* Müşteri modu (veya admin ama satıcı/aday değil) *@
+                    <nav class="cat-scroll flex-grow-1">
+                        @if (isAdmin)
+                        {
+                            <a href="/Admin" class="nav-link-menu text-warning fw-bold d-inline-flex order-first order-md-0">
+                                Admin Paneli
+                            </a>
+                            @if (User.IsInRole("Admin") || User.IsInRole("Satici"))
+                            {
+                                <a class="nav-link-menu" asp-controller="Siparis" asp-action="IadeTalepleri">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i> İade Talepleri
+                                </a>
+                            }
+                        }
+                        <a href="/Uruns" class="nav-link-menu">Tüm Ürünler</a>
+                        <a href="/Sepet" class="nav-link-menu">Sepetim</a>
+                        <a href="/Siparis" class="nav-link-menu">Siparişlerim</a>
+                        <a href="/Kullanicis/BenimReferanslarim" class="nav-link-menu">Referanslarım</a>
+                    </nav>
+                }
+                else
+                {
+                    @* Satıcı / Aday modu *@
+                    <nav class="cat-scroll flex-grow-1">
+                        @if (isAdmin)
+                        {
+                            <a href="/Admin" class="nav-link-menu text-warning fw-bold d-inline-flex">
+                                Admin Paneli
+                            </a>
+                        }
+                        <a href="/SaticiPanel" class="nav-link-menu">Satıcı Paneli</a>
+                        <a href="/SaticiUrunler" class="nav-link-menu">Mağaza Ürünleri</a>
+
+                        @if (User.IsInRole("Admin") || User.IsInRole("Satici"))
+                        {
+                            <a class="nav-link-menu" asp-controller="Siparis" asp-action="IadeTalepleri">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> İade Talepleri
+                            </a>
+                        }
+                        @* DİKKAT: Satıcı/Aday için "Tüm Ürünler" ve "Referanslarım" GÖSTERİLMEZ *@
+                    </nav>
+                }
+
+                <span class="slogan-text d-none d-md-inline">Kaliteli alışveriş, gerçek kazanç.</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ANA İÇERİK -->
+    <main class="container py-4">
+        @RenderBody()
+    </main>
+
+    <!-- === FOOTER (İyzico gereklilikleri) === -->
+    <footer class="border-top mt-5 py-4">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 text-center text-md-start">
+            <div class="small text-muted">
+                © @DateTime.Now.Year Maraline
+                · <a asp-controller="Home" asp-action="Gizlilik">Gizlilik Politikası</a>
+                · <a asp-controller="Home" asp-action="MesafeliSatis">Mesafeli Satış Sözleşmesi</a>
+                · <a asp-controller="Home" asp-action="IadeBilgisi">İade Bilgisi</a>
+                · <a asp-controller="Home" asp-action="Iletisim">İletişim</a>
+            </div>
+            <div class="d-flex align-items-center justify-content-center gap-3">
+                <img src="~/images/visa.png" alt="Visa" class="payment-logo" />
+                <img src="~/images/mastercard.png" alt="Mastercard" class="payment-logo" />
+                <img src="~/images/Paytr.png" alt="iyzico" class="payment-logo" />
+            </div>
+        </div>
+    </footer>
+    <!-- === /FOOTER === -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    @RenderSection("Scripts", required: false)
+
+    @if (User?.Identity != null && !User.Identity.IsAuthenticated)
+    {
+        @await Html.PartialAsync("_PreloginIntro")
+    }
+</body>
+
+</html>
+
+<script>
+    (function(){
+      function getParam(name){
+        const url = new URL(window.location.href);
+        return url.searchParams.get(name);
+      }
+      function setCookie(n,v,days){
+        const d = new Date(); d.setTime(d.getTime() + (days*24*60*60*1000));
+        document.cookie = n + "=" + encodeURIComponent(v) + ";expires=" + d.toUTCString() + ";path=/;SameSite=Lax";
+      }
+      function getCookie(n){
+        const m = document.cookie.match(new RegExp("(^| )"+n+"=([^;]+)")); return m?decodeURIComponent(m[2]):null;
+      }
+
+      const ref = getParam("ref");
+      if (ref) setCookie("maraline_ref", ref, 30);
+
+      // Register sayfasında otomatik doldurma (Identity varsayılan input id/name'leri)
+      const isRegister = /\/Account\/Register\b/i.test(window.location.pathname);
+      if (isRegister){
+        const val = ref || getCookie("maraline_ref");
+        if (val){
+          // Aşağıdaki id/name'lardan hangisi varsa onu doldurur:
+          const candidates = [
+            "#Input_ReferansKodu",           // <input asp-for="Input.ReferansKodu">
+            "[name='Input.ReferansKodu']",
+            "#ReferansKodu",
+            "[name='ReferansKodu']"
+          ];
+          for (const sel of candidates){
+            const el = document.querySelector(sel);
+            if (el){ el.value = val; break; }
+          }
+        }
+      }
+    })();
+</script>

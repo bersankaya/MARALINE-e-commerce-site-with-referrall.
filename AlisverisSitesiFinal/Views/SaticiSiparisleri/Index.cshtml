@@ -1,0 +1,219 @@
+﻿@model IEnumerable<AlisverisSitesiFinal.Models.SiparisKalemi>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Gelen Siparişler";
+    var tr = new CultureInfo("tr-TR");
+    var musteriler = ViewBag.Musteriler as IDictionary<string, string> ?? new Dictionary<string, string>();
+    string MusteriAdSoyad(AlisverisSitesiFinal.Models.Siparis? s)
+        => (s != null && !string.IsNullOrEmpty(s.IdentityUserId) && musteriler.ContainsKey(s.IdentityUserId))
+           ? musteriler[s.IdentityUserId]
+           : "—";
+
+    // Varyasyon metni: alanlar boşsa Aciklama'ya düş, o da yoksa '-'
+    string VarText(AlisverisSitesiFinal.Models.SiparisKalemi k)
+    {
+        var p = new List<string>();
+        if (!string.IsNullOrWhiteSpace(k.Renk)) p.Add($"Renk: {k.Renk}");
+        if (!string.IsNullOrWhiteSpace(k.Beden)) p.Add($"Beden: {k.Beden}");
+        if (!string.IsNullOrWhiteSpace(k.Boyut)) p.Add($"Boyut: {k.Boyut}");
+        if (!string.IsNullOrWhiteSpace(k.Numara)) p.Add($"Numara: {k.Numara}");
+        if (!string.IsNullOrWhiteSpace(k.Kapasite)) p.Add($"Kapasite: {k.Kapasite}");
+        if (!string.IsNullOrWhiteSpace(k.Materyal)) p.Add($"Materyal: {k.Materyal}");
+        if (!string.IsNullOrWhiteSpace(k.Desen)) p.Add($"Desen: {k.Desen}");
+        if (p.Count > 0) return string.Join(" • ", p);
+        if (!string.IsNullOrWhiteSpace(k.Aciklama)) return k.Aciklama!;
+        return "-";
+    }
+
+    string Badge(string? d) => d switch
+    {
+        "Beklemede" => "badge bg-warning text-dark",
+        "Onaylandı" => "badge bg-primary",
+        "Kargolandı" => "badge bg-info text-dark",
+        "Tamamlandı" => "badge bg-success",
+        "Reddedildi" => "badge bg-danger",
+        _ => "badge bg-secondary"
+    };
+}
+
+<div class="container my-4">
+    <h2 class="mb-3">Gelen Siparişler</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success rounded-4">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger rounded-4">@TempData["Error"]</div>
+    }
+
+    <!-- Masaüstü -->
+    <div class="table-responsive d-none d-md-block">
+        <table class="table align-middle table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Tarih</th>
+                    <th>Ürün</th>
+                    <th>Varyasyonlar</th>
+                    <th>Adet</th>
+                    <th>Birim</th>
+                    <th>Müşteri</th>
+                    <th>Adres</th>
+                    <th class="text-end">Durum / İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var k in Model)
+                {
+                    var s = k.Siparis;
+                    var d = s?.Durum ?? "";
+                    bool canApprove = d == "Beklemede";
+                    bool canReject = d == "Beklemede";
+                    bool canShip = d == "Onaylandı";
+                    bool canComplete = d == "Kargolandı";
+                    bool locked = !(canApprove || canReject || canShip || canComplete);
+
+                    <tr>
+                        <td>@s?.SiparisTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td>@k.Urun?.Ad</td>
+                        <td class="text-muted">@VarText(k)</td>
+                        <td>@k.Miktar</td>
+                        <td>@k.BirimFiyat.ToString("C2", tr)</td>
+                        <td>@MusteriAdSoyad(s)</td>
+                        <td>
+                            <div class="small">@s?.Adres?.AdresDetayi</div>
+                            <div class="small text-muted">@s?.Adres?.Ilce / @s?.Adres?.Il</div>
+                        </td>
+                        <td class="text-end">
+                            <div class="mb-2"><span class="@Badge(s?.Durum)">@s?.Durum</span></div>
+
+                            @if (canApprove)
+                            {
+                                <form asp-action="Onayla" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@k.Id" />
+                                    <button class="btn btn-sm btn-outline-primary">Onayla</button>
+                                </form>
+                            }
+                            @if (canShip)
+                            {
+                                <form asp-action="Kargola" method="post" class="d-inline ms-1">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@k.Id" />
+                                    <input type="text" name="kargoTakipNo" placeholder="Takip No" class="form-control form-control-sm d-inline-block" style="width:140px" />
+                                    <button class="btn btn-sm btn-outline-success ms-1">Kargola</button>
+                                </form>
+                            }
+                            @if (canReject)
+                            {
+                                <form asp-action="Reddet" method="post" class="d-inline ms-1">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@k.Id" />
+                                    <input type="text" name="neden" placeholder="Reddetme nedeni" class="form-control form-control-sm d-inline-block" style="width:180px" />
+                                    <button class="btn btn-sm btn-outline-danger ms-1">Reddet</button>
+                                </form>
+                            }
+                            @if (canComplete)
+                            {
+                                <form asp-action="Tamamla" method="post" class="d-inline ms-1">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@k.Id" />
+                                    <button class="btn btn-sm btn-outline-dark">Tamamla</button>
+                                </form>
+                            }
+                            @if (locked)
+                            {
+                                <span class="text-muted small"><i class="bi bi-lock"></i> İşlem kilitli</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mobil -->
+    <div class="d-md-none">
+        @foreach (var k in Model)
+        {
+            var s = k.Siparis;
+            var d = s?.Durum ?? "";
+            bool canApprove = d == "Beklemede";
+            bool canReject = d == "Beklemede";
+            bool canShip = d == "Onaylandı";
+            bool canComplete = d == "Kargolandı";
+            bool locked = !(canApprove || canReject || canShip || canComplete);
+
+            <div class="card shadow-sm rounded-4 mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-1">
+                        <div class="fw-semibold">@k.Urun?.Ad</div>
+                        <div><span class="@Badge(s?.Durum)">@s?.Durum</span></div>
+                    </div>
+                    <div class="small text-muted">@s?.SiparisTarihi.ToString("dd.MM.yyyy HH:mm")</div>
+
+                    <div class="mt-1 small text-muted">Varyasyonlar</div>
+                    <div class="small">@VarText(k)</div>
+
+                    <div class="row mt-2 g-2">
+                        <div class="col-6 small">Adet: <strong>@k.Miktar</strong></div>
+                        <div class="col-6 small text-end">Birim: <strong>@k.BirimFiyat.ToString("C2", tr)</strong></div>
+                    </div>
+
+                    <div class="mt-2">
+                        <div class="small text-muted">Müşteri</div>
+                        <div class="small">@MusteriAdSoyad(s)</div>
+                    </div>
+
+                    <div class="mt-2">
+                        <div class="small text-muted">Adres</div>
+                        <div class="small">@s?.Adres?.AdresDetayi</div>
+                        <div class="small text-muted">@s?.Adres?.Ilce / @s?.Adres?.Il</div>
+                    </div>
+
+                    <div class="mt-3 d-flex flex-column gap-2">
+                        @if (canApprove)
+                        {
+                            <form asp-action="Onayla" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@k.Id" />
+                                <button class="btn btn-outline-primary w-100">Onayla</button>
+                            </form>
+                        }
+                        @if (canShip)
+                        {
+                            <form asp-action="Kargola" method="post" class="d-flex gap-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@k.Id" />
+                                <input type="text" name="kargoTakipNo" placeholder="Takip No" class="form-control" />
+                                <button class="btn btn-outline-success">Kargola</button>
+                            </form>
+                        }
+                        @if (canReject)
+                        {
+                            <form asp-action="Reddet" method="post" class="d-flex flex-column gap-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@k.Id" />
+                                <textarea name="neden" class="form-control" rows="2" placeholder="Reddetme nedeni"></textarea>
+                                <button class="btn btn-outline-danger">Reddet</button>
+                            </form>
+                        }
+                        @if (canComplete)
+                        {
+                            <form asp-action="Tamamla" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@k.Id" />
+                                <button class="btn btn-outline-dark w-100">Tamamla</button>
+                            </form>
+                        }
+                        @if (locked)
+                        {
+                            <div class="small text-muted"><i class="bi bi-lock"></i> İşlem kilitli</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

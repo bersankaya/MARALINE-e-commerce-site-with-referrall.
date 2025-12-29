@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /Sepet
+Disallow: /Hesabim
+Disallow: /Giris
+Disallow: /Kayit
+Sitemap: https://maraline.com.tr/sitemap.xml

@@ -1,0 +1,25 @@
+﻿@model AlisverisSitesiFinal.Models.Kategori
+
+@{
+    ViewData["Title"] = "Kategori Sil";
+}
+
+<h2>Kategori Sil</h2>
+
+<div class="alert alert-warning">
+    <strong>UYARI:</strong> Bu kategoriyi silmek istediğinize emin misiniz?
+</div>
+
+<dl class="row">
+    <dt class="col-sm-2">ID</dt>
+    <dd class="col-sm-10">@Model.Id</dd>
+
+    <dt class="col-sm-2">Ad</dt>
+    <dd class="col-sm-10">@Model.Ad</dd>
+</dl>
+
+<form asp-action="DeleteConfirmed" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Evet, Sil</button>
+    <a asp-action="Index" class="btn btn-secondary">İptal</a>
+</form>

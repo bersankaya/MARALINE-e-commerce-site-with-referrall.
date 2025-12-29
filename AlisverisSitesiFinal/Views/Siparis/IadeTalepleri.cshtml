@@ -1,0 +1,185 @@
+﻿@model List<AlisverisSitesiFinal.Models.IadeTalebi>
+@{
+    ViewData["Title"] = "İade Talepleri";
+    bool isAdmin = User.IsInRole("Admin");
+
+    // Admin değilse null ver; Admin ise ViewBag yoksa bile boş sözlükle güvene al.
+    var ibanlar = isAdmin
+        ? (ViewBag.Ibanlar as IDictionary<string, string>) ?? new Dictionary<string, string>()
+        : null;
+}
+@await Html.PartialAsync("_Bildirimler")
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h4 class="mb-0">İade Talepleri</h4>
+    <span class="text-muted">@((Model?.Count ?? 0)) talep</span>
+</div>
+
+<table class="table table-sm table-hover align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>#</th>
+            <th>Sipariş</th>
+            <th>Talep Durumu</th>
+            <th>Talep Tarihi</th>
+            <th>Toplam</th>
+            <th>RMA / Adres</th>
+            <th>Ödeme</th>
+            @if (isAdmin)
+            {
+                <th>IBAN</th>
+            }
+            <th style="width:420px">İşlem</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var t in (Model ?? new List<AlisverisSitesiFinal.Models.IadeTalebi>()))
+        {
+            var sip = t.Siparis;
+            var top = sip?.ToplamTutar ?? 0m;
+            bool odendi = t.IadeOdemeTarihi != null;
+            bool iadeEdildi = string.Equals(sip?.Durum, "İade Edildi", StringComparison.OrdinalIgnoreCase);
+            bool talepTamamlandi = string.Equals(t.Durum, "Tamamlandı", StringComparison.OrdinalIgnoreCase);
+
+            <tr>
+                <td>@t.Id</td>
+                <td>#@t.SiparisId <small class="text-muted">(@(sip?.Durum ?? "-"))</small></td>
+                <td>
+                    @if (string.Equals(t.Durum, "Beklemede", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span class="badge bg-warning text-dark">Beklemede</span>
+                    }
+                    else if (string.Equals(t.Durum, "Onaylandı", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span class="badge bg-success">Onaylandı</span>
+                    }
+                    else if (string.Equals(t.Durum, "Tamamlandı", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span class="badge bg-secondary">Tamamlandı</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Reddedildi</span>
+                    }
+                </td>
+                <td>@t.TalepTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                <td>@top.ToString("n2") ₺</td>
+                <td>
+                    @if (!string.IsNullOrWhiteSpace(t.RmaKodu))
+                    {
+                        <div><span class="badge bg-info text-dark">RMA</span> <strong>@t.RmaKodu</strong></div>
+                        @if (!string.IsNullOrWhiteSpace(t.IadeAdres))
+                        {
+                            <div class="small text-muted">@t.IadeAdres</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(t.IadeTalimat))
+                        {
+                            <div class="small">@t.IadeTalimat</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(t.MusteriKargoFirmasi) || !string.IsNullOrWhiteSpace(t.MusteriKargoTakipNo))
+                        {
+                            <div class="small">Kargo: @t.MusteriKargoFirmasi @t.MusteriKargoTakipNo</div>
+                        }
+                    }
+                    else
+                    {
+                        <span class="text-muted small">RMA oluşmadı</span>
+                    }
+                </td>
+                <td>
+                    @if (odendi)
+                    {
+                        <span class="badge bg-primary">Ödeme Yapıldı</span>
+                        <div class="small text-muted">
+                            @t.IadeTutar?.ToString("n2") ₺ • @t.IadeYontemi<br />
+                            @t.IadeOdemeTarihi?.ToString("dd.MM.yyyy HH:mm")
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Bekliyor</span>
+                    }
+                </td>
+
+                @if (isAdmin)
+                {
+                    <td>
+                        @{
+                            var key = string.IsNullOrWhiteSpace(t.KullaniciId) ? null : t.KullaniciId;
+                            string ibanText = "IBAN yok";
+                            if (key != null && ibanlar != null && ibanlar.TryGetValue(key, out var _iban) && !string.IsNullOrWhiteSpace(_iban))
+                            {
+                                ibanText = _iban;
+                            }
+                        }
+                        <span class="text-monospace">@ibanText</span>
+                    </td>
+                }
+
+                <td>
+                    @* 1) BEKLEMEDE *@
+                    @if (string.Equals(t.Durum, "Beklemede", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <form asp-action="IadeOnayla" asp-controller="Siparis" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="talepId" value="@t.Id" />
+                            <button class="btn btn-success btn-sm">Onayla</button>
+                        </form>
+
+                        <form asp-action="IadeReddet" asp-controller="Siparis" method="post" class="d-inline ms-1">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="talepId" value="@t.Id" />
+                            <input type="hidden" name="neden" value="Uygun değil" />
+                            <button class="btn btn-outline-danger btn-sm"
+                                    onclick="this.disabled=true; this.innerText='İşleniyor...'; this.form.submit();">
+                                Reddet
+                            </button>
+                        </form>
+                    }
+                    @* 2) ONAYLANDI *@
+                    else if (string.Equals(t.Durum, "Onaylandı", StringComparison.OrdinalIgnoreCase))
+                    {
+                        @* Satıcı tarafı *@
+                        @if (!isAdmin)
+                        {
+                            <form asp-action="IadeUlasti" asp-controller="Siparis" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="talepId" value="@t.Id" />
+                                <button class="btn btn-outline-secondary btn-sm" @(iadeEdildi ? "disabled" : "")
+                                        onclick="this.disabled=true; this.innerText='İşleniyor...'; this.form.submit();">
+                                    İade Ulaştı
+                                </button>
+                            </form>
+
+                            <form asp-action="IadeUlastiReddet" asp-controller="Siparis" method="post" class="d-inline ms-1"
+                                  onsubmit="var n=this.querySelector('input[name=neden]'); if(!n.value.trim()){ alert('Reddetme nedeni zorunludur.'); return false; }">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="talepId" value="@t.Id" />
+                                <input type="text" name="neden" required placeholder="Reddetme nedeni"
+                                       class="form-control form-control-sm d-inline-block" style="max-width:220px" />
+                                <button class="btn btn-outline-danger btn-sm">İade Ulaştı ama Reddet</button>
+                            </form>
+                        }
+
+                        @* Admin: ödemeyi işaretle *@
+                        @if (isAdmin && !odendi)
+                        {
+                            <form asp-action="IadeUcretOde" asp-controller="Siparis" method="post" class="d-inline-flex gap-2 align-items-center">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="talepId" value="@t.Id" />
+                                <input type="number" step="0.01" min="0" name="tutar" value="@top" class="form-control form-control-sm" style="max-width:120px" />
+                                <input type="text" name="yontem" placeholder="Yöntem (Kart/Havale/Cüzdan)" class="form-control form-control-sm" style="max-width:180px" />
+                                <button class="btn btn-primary btn-sm">Ödemeyi İşaretle</button>
+                            </form>
+                        }
+                    }
+                    @* 3) TAMAMLANDI *@
+                    else if (talepTamamlandi)
+                    {
+                        <span class="badge bg-secondary">İade ulaştı • işlem tamam</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

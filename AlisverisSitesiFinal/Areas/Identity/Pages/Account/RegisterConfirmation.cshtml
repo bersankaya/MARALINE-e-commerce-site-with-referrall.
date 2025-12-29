@@ -1,0 +1,41 @@
+﻿@page
+@functions {
+    [BindProperty(SupportsGet = true)]
+    public string? Email { get; set; }
+}
+@{
+    ViewData["Title"] = "Kayıt Alındı";
+}
+
+<div class="container my-5">
+    <div class="card border-0 shadow-lg rounded-4 mx-auto" style="max-width: 520px;">
+        <div class="card-body text-center py-5">
+            <div class="mb-3">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+            </div>
+
+            <h2 class="fw-semibold mb-3">Kayıt Başarılı 🎉</h2>
+
+            <p class="text-muted mb-4">
+                @if (string.IsNullOrWhiteSpace(Email))
+                {
+                    @:E-posta adresinize onay maili gönderdik.
+                }
+                else
+                {
+                    @Html.Raw($"<strong>{Email}</strong> adresine onay e-postası gönderdik.")
+                }
+            </p>
+
+            <a class="btn btn-success px-4" asp-area="Identity" asp-page="/Account/ResendEmailConfirmation">
+                <i class="bi bi-envelope-paper me-1"></i> Onay e-postasını tekrar gönder
+            </a>
+
+            <div class="mt-4">
+                <a asp-page="/Account/Login" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Giriş Sayfasına Dön
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

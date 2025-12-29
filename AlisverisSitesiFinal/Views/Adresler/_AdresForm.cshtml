@@ -1,0 +1,58 @@
+﻿@model AlisverisSitesiFinal.Models.Adres
+@{
+    // Request yerine sadece controller'dan gelen değeri kullanıyoruz
+    var returnUrl = ViewBag.ReturnUrl as string ?? "";
+    // Aynı formu Edit/Create’te kullanabilmek için action'ı dinamik seçelim
+    var actionName = ViewContext.RouteData.Values["action"]?.ToString() ?? "Create";
+}
+
+<form asp-controller="Adresler" asp-action="@actionName" method="post" class="needs-validation" novalidate>
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+    <div class="mb-3">
+        <label asp-for="AdresBasligi" class="form-label"></label>
+        <input asp-for="AdresBasligi" class="form-control" />
+        <span asp-validation-for="AdresBasligi" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="AdresDetayi" class="form-label"></label>
+        <textarea asp-for="AdresDetayi" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="AdresDetayi" class="text-danger"></span>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label asp-for="Il" class="form-label"></label>
+            <input asp-for="Il" class="form-control" />
+            <span asp-validation-for="Il" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Ilce" class="form-label"></label>
+            <input asp-for="Ilce" class="form-control" />
+            <span asp-validation-for="Ilce" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="PostaKodu" class="form-label"></label>
+            <input asp-for="PostaKodu" class="form-control" />
+            <span asp-validation-for="PostaKodu" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mb-3 mt-3">
+        <label asp-for="Telefon" class="form-label"></label>
+        <input asp-for="Telefon" class="form-control" />
+        <small class="text-muted">Opsiyonel</small>
+        <span asp-validation-for="Telefon" class="text-danger"></span>
+    </div>
+    <!-- ✅ T.C. Kimlik Alanı -->
+    <div class="mb-3">
+        <label asp-for="TCKimlik" class="form-label"></label>
+        <input asp-for="TCKimlik" class="form-control" maxlength="11" />
+        <small class="text-muted">11 haneli T.C. kimlik numaranızı giriniz</small>
+        <span asp-validation-for="TCKimlik" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Kaydet</button>
+</form>

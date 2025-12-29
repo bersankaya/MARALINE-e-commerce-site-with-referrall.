@@ -1,0 +1,826 @@
+@model AlisverisSitesiFinal.Models.Urun
+@using System.Globalization
+@using System.IO
+@using Microsoft.EntityFrameworkCore
+@inject AlisverisSitesiFinal.Data.UygulamaDbContext _context
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+@{
+    ViewData["Title"] = Model.Ad;
+    var tr = new CultureInfo("tr-TR");
+
+    // ; , ve satır sonuna göre ayır (boşları at)
+    List<string> Csv(string? s) => string.IsNullOrWhiteSpace(s)
+        ? new()
+        : s.Split(new[] { ',', ';', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+    var renkler = Csv(Model.RenkSecenekleri);
+    var bedenler = Csv(Model.BedenSecenekleri);
+    var boyutlar = Csv(Model.BoyutSecenekleri);
+    var numaralar = Csv(Model.NumaraSecenekleri);
+    var kapasiteler = Csv(Model.KapasiteSecenekleri);
+    var materyaller = Csv(Model.MateryalSecenekleri);
+    var desenler = Csv(Model.DesenSecenekleri);
+
+    bool tukenmis = (Model?.StokAdedi ?? 0) < 1;
+
+    // --- Galeri: ana resim + aynı klasördeki benzer adlandırılmış ekler ---
+    var gallery = new List<string>();
+    if (!string.IsNullOrWhiteSpace(Model?.ResimUrl))
+    {
+        gallery.Add(Model.ResimUrl);
+        try
+        {
+            // wwwroot çözümü: Env.WebRootPath öncelikli, yoksa çalışma dizininden
+            var webRoot = Env?.WebRootPath;
+            if (string.IsNullOrWhiteSpace(webRoot))
+                webRoot = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+
+            // Ana görselin fiziksel yolu
+            var anaRel = Model.ResimUrl.TrimStart('/').Replace("/", System.IO.Path.DirectorySeparatorChar.ToString());
+            var anaPhysical = System.IO.Path.Combine(webRoot!, anaRel);
+
+            var dir = System.IO.Path.GetDirectoryName(anaPhysical);
+            var stem = System.IO.Path.GetFileNameWithoutExtension(anaPhysical);
+
+            if (!string.IsNullOrEmpty(dir) && System.IO.Directory.Exists(dir))
+            {
+                string[] allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+                var files = System.IO.Directory.GetFiles(dir)
+                    .Where(p =>
+                    {
+                        // sadece görseller
+                        var ext = System.IO.Path.GetExtension(p);
+                        if (!allowed.Contains(ext, StringComparer.OrdinalIgnoreCase)) return false;
+
+                        // ana dosyanın kendisini alma
+                        var name = System.IO.Path.GetFileNameWithoutExtension(p);
+                        if (name.Equals(stem, StringComparison.OrdinalIgnoreCase)) return false;
+
+                        // stem_2 | stem-3 | stem.4 ...
+                        return name.StartsWith(stem + "_", StringComparison.OrdinalIgnoreCase)
+                            || name.StartsWith(stem + "-", StringComparison.OrdinalIgnoreCase)
+                            || name.StartsWith(stem + ".", StringComparison.OrdinalIgnoreCase);
+                    })
+                    .OrderBy(p => p)
+                    .Take(12)
+                    .Select(p =>
+                    {
+                        var rel = System.IO.Path.GetRelativePath(webRoot!, p).Replace("\\", "/");
+                        return "/" + rel.TrimStart('/');
+                    })
+                    .ToList();
+
+                gallery.AddRange(files);
+            }
+        }
+        catch { /* dosya erişimi sorun çıkarırsa sessiz geç */ }
+    }
+
+    // --- Benzer Ürünler (adı aynı) ---
+    var benzerUrunler = _context.Uruns
+        .AsNoTracking()
+        .Where(u =>
+            u.Id != Model!.Id &&
+            u.YayindaMi &&
+            u.Durum == AlisverisSitesiFinal.Models.UrunDurum.Yayinda &&
+            u.Ad == Model.Ad &&
+            _context.Magazalar.Any(m => m.Id == u.StoreId && m.AktifMi))
+        .OrderByDescending(u => u.Id)
+        .Take(12)
+        .ToList();
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+    /* --- Ürün görseli için yakınlaştırma --- */
+    .zoom-wrap {
+        position: relative;
+        overflow: hidden;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 6px 18px rgba(0,0,0,.06);
+    }
+
+    .zoom-img {
+        width: 100%;
+        height: auto;
+        display: block;
+        transition: transform .25s ease, filter .2s ease, opacity .2s ease;
+        transform-origin: center center;
+        object-fit: contain;
+        max-height: 520px;
+        background: #fff;
+    }
+
+    .zoom-wrap:hover .zoom-img {
+        transform: scale(1.75);
+        cursor: zoom-in;
+    }
+
+    .zoom-wrap.zoomed .zoom-img {
+        transform: scale(1.75);
+        cursor: zoom-out;
+    }
+
+    /* --- Galeri küçük tırnaklar --- */
+    .urun-galeri-thumbs {
+        padding-bottom: 6px;
+    }
+
+    .galeri-thumb {
+        width: 72px;
+        height: 72px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 2px solid transparent;
+        box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        transition: transform .15s ease, border-color .15s ease;
+    }
+
+        .galeri-thumb:hover {
+            transform: translateY(-2px);
+        }
+
+        .galeri-thumb.active {
+            border-color: rgba(0,0,0,.25);
+        }
+
+    /* --- Tükendi görünümü --- */
+    .soldout-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.45));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: #fff;
+        padding: 1.25rem;
+        backdrop-filter: blur(1px);
+    }
+
+        .soldout-overlay .inner {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .soldout-overlay .circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.12);
+            display: grid;
+            place-items: center;
+            font-size: 32px;
+        }
+
+        .soldout-overlay .title {
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: .5px;
+        }
+
+        .soldout-overlay .hint {
+            opacity: .9;
+            font-size: .95rem;
+        }
+
+    .soldout-ribbon {
+        position: absolute;
+        top: 14px;
+        left: -40px;
+        transform: rotate(-35deg);
+        background: #dc3545;
+        color: #fff;
+        padding: .4rem 2.5rem;
+        font-weight: 700;
+        box-shadow: 0 6px 16px rgba(220,53,69,.35);
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        font-size: .85rem;
+        z-index: 2;
+    }
+
+    .grayscale {
+        filter: grayscale(35%) contrast(95%);
+        opacity: .85;
+    }
+</style>
+
+<div class="container py-4">
+    @* Bildirimler *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <!-- Eskideki <img> yerine: varsa slider, yoksa tek görsel -->
+            <div class="zoom-wrap @(tukenmis ? "soldout" : "")" id="zoomWrap">
+                @if (tukenmis)
+                {
+                    <div class="soldout-ribbon">Tükendi</div>
+                }
+
+                @if (gallery.Count > 1)
+                {
+                    var carouselId = $"urunGaleri-{Model!.Id}";
+                    <div id="@carouselId" class="carousel slide" data-bs-ride="false">
+                        <div class="carousel-inner">
+                            @for (int i = 0; i < gallery.Count; i++)
+                            {
+                                <div class="carousel-item @(i == 0 ? "active" : "")">
+                                    <img src="@gallery[i]" class="d-block w-100 zoom-img @(tukenmis ? "grayscale" : "")" alt="@Model.Ad" loading="lazy" />
+                                </div>
+                            }
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#@carouselId" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Önceki</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#@carouselId" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Sonraki</span>
+                        </button>
+
+                        <div class="d-flex gap-2 mt-2 overflow-auto urun-galeri-thumbs" id="thumbs-@Model.Id">
+                            @for (int i = 0; i < gallery.Count; i++)
+                            {
+                                <button type="button" class="btn p-0 border-0 bg-transparent"
+                                        onclick="(function(){var el=document.getElementById('@carouselId'); var c=bootstrap.Carousel.getOrCreateInstance(el); c.to(@i);})();">
+                                    <img src="@gallery[i]" class="galeri-thumb @(i == 0 ? "active" : "")" alt="thumb-@i" loading="lazy" />
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <img id="mainImage"
+                         src="@(string.IsNullOrWhiteSpace(Model!.ResimUrl) ? "/images/no-image.png" : Model.ResimUrl)"
+                         alt="@Model.Ad"
+                         class="zoom-img @(tukenmis ? "grayscale" : "")" />
+                }
+
+                @if (tukenmis)
+                {
+                    <div class="soldout-overlay">
+                        <div class="inner">
+                            <div class="circle"><i class="bi bi-x-octagon"></i></div>
+                            <div class="title">Ürün Tükendi</div>
+                            <div class="hint">Bu ürün şu an stokta yok. Benzer ürünleri inceleyebilir veya daha sonra tekrar kontrol edebilirsiniz.</div>
+                            <div class="mt-2">
+                                <a href="/Uruns" class="btn btn-light btn-sm">
+                                    <i class="bi bi-grid me-1"></i> Benzer Ürünlere Git
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <h2 class="fw-semibold mb-1">@Model.Ad</h2>
+
+            @if (!tukenmis)
+            {
+                <div class="text-muted mb-2">Stok: <b>@Model.StokAdedi</b></div>
+            }
+            else
+            {
+                <div class="mb-2">
+                    <span class="badge bg-danger rounded-pill px-3 py-2">
+                        <i class="bi bi-exclamation-octagon me-1"></i> Tükendi
+                    </span>
+                </div>
+            }
+
+            <div class="display-6 fw-bold text-success mb-3">@Model.Fiyat.ToString("C", tr)</div>
+
+            @* ---------- ÜRÜN TÜKENDİYSE ŞIK BİLGİLENDİRME ---------- *@
+            @if (tukenmis)
+            {
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="text-danger fs-3"><i class="bi bi-bag-x"></i></div>
+                            <div>
+                                <h5 class="fw-semibold mb-1">Şu An Satın Alınamıyor</h5>
+                                <p class="text-muted mb-2">
+                                    Ürün yeniden stoklara girdiğinde hızlıca yakalamak için benzer kategorideki ürünleri inceleyebilirsiniz.
+                                </p>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="/Uruns" class="btn btn-outline-secondary">
+                                        <i class="bi bi-search me-1"></i> Benzerlerini Göster
+                                    </a>
+                                    <a href="javascript:history.back()" class="btn btn-link text-decoration-none">
+                                        <i class="bi bi-arrow-left me-1"></i> Geri Dön
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                @* ---------- SEPETE EKLE FORMU (tamamen bağımsız) ---------- *@
+                @if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin") && !User.IsInRole("Satici"))
+                {
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <form asp-controller="Sepet" asp-action="Ekle" method="post" class="row g-3">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="urunId" value="@Model.Id" />
+
+                                @if (Model.RenkSecimiVar)
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Renk</label>
+                                        <select name="renk" class="form-select" @(renkler.Count == 0 ? "disabled" : "") required>
+                                            @if (renkler.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in renkler)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                @if (Model.BedenSecimiVar)
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Beden</label>
+                                        <select name="beden" class="form-select" @(bedenler.Count == 0 ? "disabled" : "") required>
+                                            @if (bedenler.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in bedenler)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                @if (Model.BoyutSecimiVar)
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Boyut</label>
+                                        <select name="boyut" class="form-select" @(boyutlar.Count == 0 ? "disabled" : "") required>
+                                            @if (boyutlar.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in boyutlar)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                @if (Model.NumaraSecimiVar)
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Numara</label>
+                                        <select name="numara" class="form-select" @(numaralar.Count == 0 ? "disabled" : "") required>
+                                            @if (numaralar.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in numaralar)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                @if (Model.KapasiteSecimiVar)
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Kapasite</label>
+                                        <select name="kapasite" class="form-select" @(kapasiteler.Count == 0 ? "disabled" : "") required>
+                                            @if (kapasiteler.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in kapasiteler)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                @* Materyal/Desen opsiyonel — required değil *@
+                                @if (!string.IsNullOrWhiteSpace(Model.MateryalSecenekleri))
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Materyal</label>
+                                        <select name="materyal" class="form-select" @(materyaller.Count == 0 ? "disabled" : "")>
+                                            @if (materyaller.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in materyaller)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(Model.DesenSecenekleri))
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Desen</label>
+                                        <select name="desen" class="form-select" @(desenler.Count == 0 ? "disabled" : "")>
+                                            @if (desenler.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in desenler)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+
+                                <div class="col-md-4">
+                                    <label class="form-label">Miktar</label>
+                                    <input type="number" name="miktar" class="form-control" min="1" value="1" />
+                                </div>
+
+                                <div class="col-12">
+                                    <button class="btn btn-primary btn-lg" @(Model.StokAdedi < 1 ? "disabled" : null)>
+                                        <i class="bi bi-bag-plus me-1"></i> Sepete Ekle
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    @* ---------- HEMEN SATIN AL FORMU (tamamen bağımsız) ---------- *@
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <form asp-controller="Uruns" asp-action="BuyNow" method="post" class="row g-3">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+
+                                @if (Model.RenkSecimiVar)
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Renk</label>
+                                        <select name="renk" class="form-select" @(renkler.Count == 0 ? "disabled" : "") required>
+                                            @if (renkler.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in renkler)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                @if (Model.BedenSecimiVar)
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Beden</label>
+                                        <select name="beden" class="form-select" @(bedenler.Count == 0 ? "disabled" : "") required>
+                                            @if (bedenler.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in bedenler)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                @if (Model.BoyutSecimiVar)
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Boyut</label>
+                                        <select name="boyut" class="form-select" @(boyutlar.Count == 0 ? "disabled" : "") required>
+                                            @if (boyutlar.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in boyutlar)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                @if (Model.NumaraSecimiVar)
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Numara</label>
+                                        <select name="numara" class="form-select" @(numaralar.Count == 0 ? "disabled" : "") required>
+                                            @if (numaralar.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in numaralar)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                @if (Model.KapasiteSecimiVar)
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Kapasite</label>
+                                        <select name="kapasite" class="form-select" @(kapasiteler.Count == 0 ? "disabled" : "") required>
+                                            @if (kapasiteler.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in kapasiteler)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(Model.MateryalSecenekleri))
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Materyal</label>
+                                        <select name="materyal" class="form-select" @(materyaller.Count == 0 ? "disabled" : "")>
+                                            @if (materyaller.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in materyaller)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(Model.DesenSecenekleri))
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label">Desen</label>
+                                        <select name="desen" class="form-select" @(desenler.Count == 0 ? "disabled" : "")>
+                                            @if (desenler.Count == 0)
+                                            {
+                                                <option>Seçenek yok</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="">Seçiniz</option>
+                                                @foreach (var x in desenler)
+                                                {
+                                                    <option>@x</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+
+                                <div class="col-12">
+                                    <button class="btn btn-success btn-lg" @(Model.StokAdedi < 1 ? "disabled" : null)>
+                                        <i class="bi bi-lightning-charge me-1"></i> Hemen Satın Al
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">Alışveriş yapmak için müşteri hesabıyla giriş yapınız.</div>
+                }
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Model.Aciklama))
+            {
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-body">
+                        <h5 class="fw-semibold mb-2">Ürün Açıklaması</h5>
+                        <p class="mb-0">@Model.Aciklama</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* --- Benzer Ürünler şeridi --- *@
+    @if (benzerUrunler.Any())
+    {
+        <hr class="my-4" />
+        <div class="mt-2">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Benzer Ürünler</h5>
+                <small class="text-muted">“@Model.Ad” ile eşleşenler</small>
+            </div>
+
+            <div class="urun-listesi limit-8 persist-scrollbar scroll-fade">
+                @foreach (var u in benzerUrunler)
+                {
+                    <div class="urun-karti urun-karti-standart">
+                        @await Html.PartialAsync("_UrunKarti", u, new ViewDataDictionary(ViewData)
+                        {
+                            { "KartStili", "populer" }
+                        })
+            </div>
+                        }
+            </div>
+        </div>
+    }
+
+    <hr class="my-4" />
+
+    @* Yorum ekleme formu + Açılır/Kapanır Yorum Listesi *@
+    <div class="mt-4">
+        <h3 class="h6 mb-2">Yorum Yaz</h3>
+
+        @if (User.Identity?.IsAuthenticated ?? false)
+        {
+            <form asp-controller="Yorum" asp-action="Create" method="post" class="mb-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="UrunId" value="@Model?.Id" />
+
+                <div class="mb-2">
+                    <label class="form-label">Puan</label>
+                    <select class="form-select" name="Puan" required>
+                        <option value="5">5 - Mükemmel</option>
+                        <option value="4">4 - İyi</option>
+                        <option value="3">3 - Orta</option>
+                        <option value="2">2 - Zayıf</option>
+                        <option value="1">1 - Kötü</option>
+                        <option value="0">0 - Berbat</option>
+                    </select>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label">Yorum</label>
+                    <textarea class="form-control" name="Icerik" rows="3" maxlength="500" required></textarea>
+                    <div class="form-text">En fazla 500 karakter.</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-chat-right-text me-1"></i> Gönder
+                </button>
+            </form>
+        }
+        else
+        {
+            <div class="alert alert-info mb-4">Yorum yazmak için giriş yapınız.</div>
+        }
+
+        @* --- Toggle butonu --- *@
+        <div class="d-flex align-items-center justify-content-between">
+            <button class="btn btn-outline-secondary"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#yorumlarCollapse"
+                    aria-expanded="false"
+                    aria-controls="yorumlarCollapse">
+                <i class="bi bi-chat-dots me-1"></i>
+                Yapılan Yorumlar (@(Model?.Yorumlar?.Count ?? 0))
+            </button>
+            <small class="text-muted">Son eklenenler en üstte</small>
+        </div>
+
+        @* --- Açılır/Kapanır yorum listesi --- *@
+        <div id="yorumlarCollapse" class="collapse mt-3">
+            @if (Model?.Yorumlar != null && Model.Yorumlar.Any())
+            {
+                <div class="vstack gap-3" style="max-height:60vh; overflow:auto;">
+                    @foreach (var y in Model.Yorumlar.OrderByDescending(x => x.Tarih))
+                    {
+                        // Ad Soyad > UserName > Email > Anonim
+                        string ad = y.Kullanici?.Ad ?? "";
+                        string soyad = y.Kullanici?.Soyad ?? "";
+                        string adSoyad = (ad + " " + soyad).Trim();
+                        string gorunenIsim =
+                        !string.IsNullOrWhiteSpace(adSoyad) ? adSoyad :
+                        (!string.IsNullOrWhiteSpace(y.Kullanici?.UserName) ? y.Kullanici!.UserName! :
+                        (!string.IsNullOrWhiteSpace(y.Kullanici?.Email) ? y.Kullanici!.Email! : "Anonim"));
+
+                        <div class="border rounded p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="fw-semibold">@gorunenIsim</div>
+                                <div class="text-muted small">@y.Tarih.ToString("g", tr)</div>
+                            </div>
+
+                            <div class="mb-1">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    if (i <= y.Puan)
+                                    {
+                                        <i class="bi bi-star-fill text-warning"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-star text-muted"></i>
+                                    }
+                                }
+                            </div>
+
+                            <div>@(string.IsNullOrWhiteSpace(y.Icerik) ? "(Metin yok)" : y.Icerik)</div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-muted">Bu ürüne henüz yorum yapılmamış.</div>
+            }
+        </div>
+    </div>
+
+</div>
+
+<script>
+    (function () {
+        const wrap = document.getElementById('zoomWrap');
+        if (wrap && !wrap.classList.contains('soldout')) {
+            wrap.addEventListener('click', function () {
+                wrap.classList.toggle('zoomed');
+            });
+        }
+
+        // Slider - küçük resim aktifliği senkronizasyonu
+        var carousels = document.querySelectorAll('.carousel');
+        carousels.forEach(function (el) {
+            el.addEventListener('slid.bs.carousel', function (e) {
+                var activeIndex = bootstrap.Carousel.getInstance(el)?._getItemIndex(e.relatedTarget);
+                var thumbs = el.parentElement.querySelectorAll('.galeri-thumb');
+                if (!thumbs || activeIndex == null) return;
+                thumbs.forEach(function (t, i) {
+                    t.classList.toggle('active', i === activeIndex);
+                });
+            });
+        });
+    })();
+</script>

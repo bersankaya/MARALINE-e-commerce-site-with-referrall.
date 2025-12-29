@@ -1,0 +1,120 @@
+﻿@model List<AlisverisSitesiFinal.Models.IadeTalebi>
+
+@{
+    var isAdmin = User.IsInRole("Admin");
+    // Admin değilse veya ViewBag boşsa güvenli boş sözlük oluştur
+    var ibanMap = ViewBag.Ibanlar as IDictionary<string, string> ?? new Dictionary<string, string>();
+
+    string GetIban(string? userId)
+    {
+        if (!isAdmin) return ""; // Admin dışına IBAN göstermiyoruz
+        if (string.IsNullOrWhiteSpace(userId)) return "IBAN yok";
+        return (ibanMap.TryGetValue(userId, out var iban) && !string.IsNullOrWhiteSpace(iban))
+            ? iban
+            : "IBAN yok";
+    }
+
+    bool Is(string? durum, string target) =>
+        string.Equals(durum, target, System.StringComparison.OrdinalIgnoreCase);
+}
+
+<h4>İade Talepleri</h4>
+
+<table class="table table-sm align-middle">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Sipariş</th>
+            <th>Durum</th>
+            <th>Talep</th>
+            <th>İşlem</th>
+            <th>RMA</th>
+            <th>IBAN</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model == null || !Model.Any())
+        {
+            <tr>
+                <td colspan="7" class="text-muted">Gösterilecek iade talebi bulunamadı.</td>
+            </tr>
+        }
+        else
+        {
+            foreach (var t in Model)
+            {
+                <tr>
+                    <td>@t.Id</td>
+                    <td>#@t.SiparisId - @(t.Siparis?.Durum ?? "-")</td>
+                    <td>@(t.Durum ?? "-")</td>
+                    <td>@t.TalepTarihi.ToString("dd.MM.yyyy")</td>
+
+                    <td>
+                        @* BEKLEMEDE: klasik onayla/reddet *@
+                        @if (Is(t.Durum, "Beklemede"))
+                        {
+                            <form asp-action="IadeOnayla" asp-controller="Siparis" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="talepId" value="@t.Id" />
+                                <button type="submit" class="btn btn-success btn-sm">Onayla</button>
+                            </form>
+                            <form asp-action="IadeReddet" asp-controller="Siparis" method="post" class="d-inline ms-1">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="talepId" value="@t.Id" />
+                                <input type="hidden" name="neden" value="Uygun değil" />
+                                <button type="submit" class="btn btn-danger btn-sm">Reddet</button>
+                            </form>
+                        }
+
+                        @* ONAYLANDI: mağazaya ulaştı → KABUL / REDDET *@
+                        @if (Is(t.Durum, "Onaylandı"))
+                        {
+                            <form asp-action="IadeUlasti" asp-controller="Siparis" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="talepId" value="@t.Id" />
+                                <button class="btn btn-outline-success btn-sm">İade Ulaştı – Kabul</button>
+                            </form>
+
+                            <form asp-action="IadeUlastiReddet" asp-controller="Siparis" method="post" class="d-inline ms-1"
+                                  onsubmit="if(!this.neden.value.trim()){ alert('Reddetme nedeni zorunludur.'); return false; }">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="talepId" value="@t.Id" />
+                                <input type="text" name="neden" required
+                                       placeholder="Reddetme nedeni"
+                                       class="form-control form-control-sm d-inline-block" style="width:220px" />
+                                <button class="btn btn-outline-danger btn-sm ms-1">İade Ulaştı – Reddet</button>
+                            </form>
+                        }
+                    </td>
+
+                    <td>
+                        @if (!string.IsNullOrWhiteSpace(t.RmaKodu))
+                        {
+                            <div><span class="badge bg-info text-dark">RMA</span> <strong>@t.RmaKodu</strong></div>
+                            <div class="small text-muted">@t.IadeAdres</div>
+                            @if (!string.IsNullOrWhiteSpace(t.IadeTalimat))
+                            {
+                                <div class="small">@t.IadeTalimat</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(t.MusteriKargoFirmasi) || !string.IsNullOrWhiteSpace(t.MusteriKargoTakipNo))
+                            {
+                                <div class="small">Kargo: @t.MusteriKargoFirmasi @t.MusteriKargoTakipNo</div>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted small">RMA oluşmadı</span>
+                        }
+                    </td>
+
+                    <td>
+                        @if (isAdmin)
+                        {
+                            <span class="text-monospace">@GetIban(t.KullaniciId)</span>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>

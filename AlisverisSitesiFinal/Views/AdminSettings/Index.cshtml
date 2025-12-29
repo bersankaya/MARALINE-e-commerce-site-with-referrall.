@@ -1,0 +1,87 @@
+﻿@model AlisverisSitesiFinal.Models.ReferralConfig
+
+@{
+    ViewData["Title"] = "Yönetim Ayarları";
+}
+
+<div class="container py-4">
+    <h2 class="mb-4 text-primary fw-bold">⚙️ Yönetim Ayarları</h2>
+
+    <form asp-action="Index" method="post" class="row g-3 shadow-sm p-4 rounded bg-light">
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">🎁 Bonus Miktarı (TL)</label>
+            <input asp-for="BonusMiktari" class="form-control" />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">💰 Kullanıcı Kazanç Üst Sınırı (TL)</label>
+            <input asp-for="EarningCap" class="form-control" />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">📊 Aktiflik Harcama Limiti (TL)</label>
+            <input asp-for="AktiflikHarcamaLimiti" class="form-control" />
+        </div>
+
+        <div class="col-12 mt-3">
+            <button type="submit" class="btn btn-primary w-100 fw-bold">💾 Ayarları Kaydet</button>
+        </div>
+        @if (TempData["DebugInfo"] is string dbg)
+        {
+            <div class="alert alert-secondary small mt-3">@dbg</div>
+        }
+        @if (TempData["SuccessMessage"] is string ok)
+        {
+            <div class="alert alert-success mt-3">@ok</div>
+        }
+        @if (TempData["ErrorMessage"] is string err)
+        {
+            <div class="alert alert-danger mt-3">@err</div>
+        }
+
+    </form>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success mt-4">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger mt-4">@TempData["ErrorMessage"]</div>
+    }
+
+    <hr class="my-5" />
+
+    <h4 class="mb-4 text-danger">📌 Kullanıcıya Özel Referans Limiti Tanımla</h4>
+
+    <form asp-action="KullaniciyaLimitVer" method="post" class="row g-3 shadow-sm p-4 rounded bg-white border">
+        <div class="col-md-6">
+            <label class="form-label">📧 E-posta adresi</label>
+            <input name="Email" class="form-control" placeholder="ornek@kullanici.com" required />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">🔢 Yeni Referans Limiti</label>
+            <input name="YeniLimit" class="form-control" type="number" min="1" required />
+        </div>
+
+        <div class="col-12 mt-2">
+            <button type="submit" class="btn btn-outline-primary w-100 fw-bold">📌 Kaydet ve Uygula</button>
+        </div>
+    </form>
+
+    @if (TempData["SuccessMessageUser"] != null)
+    {
+        <div class="alert alert-success mt-4">@TempData["SuccessMessageUser"]</div>
+    }
+    @if (TempData["ErrorMessageUser"] != null)
+    {
+        <div class="alert alert-danger mt-4">@TempData["ErrorMessageUser"]</div>
+    }
+</div>
+<li class="nav-item">
+    <a class="nav-link" asp-controller="AdminSettings" asp-action="KimKacKisi">
+        <i class="bi bi-people"></i> Kim Kaç Kişi Çağırabiliyor?
+    </a>
+</li>
+

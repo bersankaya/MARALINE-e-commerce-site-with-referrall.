@@ -1,0 +1,127 @@
+﻿@using System.Text.Json
+@using System.Collections.Generic
+@{
+    ViewData["Title"] = "İletişim";
+
+    // >>> BURALARI DOLDUR <<<
+    var phoneE164 = "905462922154";          // ülke kodlu, boşluksuz
+    var phoneDisplay = "+90 546 292 21 54";     // ekranda görünecek format
+    var email = "maralinemagaza@gmail.com";
+    var addressFull = "PEHLİVAN MAH. COLEMERİK CAD. NO:32 İÇ KAPI NO:9 HAKKARİ/MERKEZ";
+    var brandName = "Maraline";
+    var whatsappUrl = $"https://wa.me/{phoneE164}?text=Merhaba%20{brandName}%20destek%20ekibi%2C%20yard%C4%B1m%20almak%20istiyorum.";
+    var siteUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
+
+    // --- JSON-LD'yi C# nesnesi olarak kur ---
+    var jsonLd = new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "Organization",
+        ["name"] = brandName,
+        ["url"] = siteUrl,
+        ["email"] = $"mailto:{email}",
+        ["telephone"] = phoneDisplay,
+        ["contactPoint"] = new[]
+        {
+            new Dictionary<string, object?>
+            {
+                ["@type"] = "ContactPoint",
+                ["contactType"] = "customer support",
+                ["telephone"] = phoneDisplay,
+                ["availableLanguage"] = new[] { "tr-TR" }
+            }
+        },
+        ["address"] = new Dictionary<string, object?>
+        {
+            ["@type"] = "PostalAddress",
+            ["streetAddress"] = "PEHLİVAN MAH. COLEMERİK CAD. NO:32 İÇ KAPI NO:9",
+            ["addressLocality"] = "HAKKARİ",
+            ["addressRegion"] = "MERKEZ",
+            ["addressCountry"] = "TR"
+        }
+    };
+    var jsonOptions = new JsonSerializerOptions { WriteIndented = false };
+}
+
+<section class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width:56px;height:56px;background:linear-gradient(135deg,#0a7a4a,#18a06a);">
+                            <i class="bi bi-chat-dots text-white fs-3"></i>
+                        </div>
+                        <div>
+                            <h1 class="h3 mb-0">@brandName İletişim</h1>
+                            <small class="text-muted">7/24 WhatsApp destek hattı</small>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="p-3 border rounded-3 d-flex align-items-center justify-content-between">
+                                <div class="me-3">
+                                    <div class="text-muted small">WhatsApp Destek</div>
+                                    <div class="fw-semibold fs-5">@phoneDisplay</div>
+                                </div>
+                                <a class="btn btn-success px-3 rounded-3"
+                                   href="@whatsappUrl" target="_blank" rel="noopener">
+                                    <i class="bi bi-whatsapp me-2"></i>WhatsApp’tan Yaz
+                                </a>
+                            </div>
+                            <div class="form-text mt-1">
+                                Çağrı almak yerine WhatsApp üzerinden hızlı destek sağlıyoruz.
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded-3 h-100">
+                                <div class="text-muted small">E-posta</div>
+                                <a class="fw-semibold text-decoration-none" href="mailto:@email">@email</a>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded-3 h-100">
+                                <div class="text-muted small">Adres</div>
+                                <div class="fw-semibold">@addressFull</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check text-success"></i>
+                        <small class="text-muted">
+                            İletişim bilgilerimiz PayTR ve mevzuat gereği sitemizde görünürdür. Arama yerine WhatsApp destek sağlıyoruz.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- JSON-LD (güvenli) -->
+<script type="application/ld+json">
+    @Html.Raw(JsonSerializer.Serialize(jsonLd, jsonOptions))
+</script>
+
+<style>
+    /* İsteğe bağlı: site.css'e taşıyabilirsin */
+    .card-body .border {
+        border-color: #e9ecef !important;
+    }
+
+    .btn-success {
+        background-color: #18a06a;
+        border-color: #18a06a;
+    }
+
+        .btn-success:hover {
+            filter: brightness(0.95);
+        }
+</style>
